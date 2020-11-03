@@ -6,6 +6,12 @@
 
 * Dropped support for Python 2.7 and Python 3.5
 * Use `poetry` as the packaging and dependency management tool
+* Changed http dep from `requests` to `httpx` to support `asyncio`
+* Removed the `credssp_minimum_version` kwarg for `pypsrp.wsman.WSMan` as the underlying library does not support setting this option
+
+### Features
+
+* Added an `Async*` class for WSMan, WinRS, Process, RunspacePool, PowerShell that is compatible with `asyncio`
 
 
 ## 0.5.0 - 2020-08-13
