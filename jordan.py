@@ -47,10 +47,49 @@ script = '''
 
 
 async def async_psrp(connection_info):
-    async with AsyncRunspacePool(connection_info) as rp:
-        await rp.reset_runspace_state()
-        await rp.set_max_runspaces(10)
-        await rp.get_available_runspaces()
+
+    class ReadHost(PSHostUI):
+        async def read_line(self):
+            return input("press to enter to continue pipeline")
+
+    class RawUI(PSHostRawUI):
+
+        def get_foreground_color(self) -> ConsoleColor:
+            return ConsoleColor.White
+
+        def get_background_color(self) -> ConsoleColor:
+            return ConsoleColor.Blue
+
+        def get_cursor_position(self) -> Coordinates:
+            return Coordinates(10, 20)
+
+        def get_window_position(self) -> Coordinates:
+            return Coordinates(0, 0)
+
+        def get_cursor_size(self):
+            return 25
+
+        def get_buffer_size(self) -> Size:
+            return Size(10, 20)
+
+        def get_window_size(self) -> Size:
+            return Size(10, 20)
+
+        def get_window_title(self):
+            return 'Window Title'
+
+        def get_max_window_size(self) -> Size:
+            return Size(10, 20)
+
+        def get_max_physical_window_size(self) -> Size:
+            return Size(10, 20)
+
+    host = PSHost(ui=ReadHost(raw_ui=RawUI()))
+
+    async with AsyncRunspacePool(connection_info, host=host) as rp:
+        #await rp.reset_runspace_state()
+        #await rp.set_max_runspaces(10)
+        #await rp.get_available_runspaces()
 
         #await asyncio.sleep(10)
 
@@ -63,10 +102,9 @@ async def async_psrp(connection_info):
         #for d in done:
         #    print(d.result())
 
-
-
         ps = AsyncPowerShell(rp)
-        ps.add_script('whoami.exe')
+        #ps.add_script('whoami.exe')
+        ps.add_script('echo "hi"; [void]$host.UI.ReadLine(); echo "end"')
         print(await ps.invoke())
 
     print("exit")
@@ -126,14 +164,14 @@ async def a_main():
         #                        username='vagrant',
         #                        password='vagrant',
         #                        executable='powershell.exe',
-        #                        arguments=['-s', '-NoLogo'])),
+        #                        arguments=['-Version', '5.1', '-NoLogo', '-NoProfile', '-s'])),
 
         # This does work and it's essentially the same as the subsystem stuff
-        #async_psrp(AsyncSSHInfo('test.wsman.env',
-        #                        username='vagrant',
-        #                        password='vagrant',
-        #                        executable='pwsh.exe',
-        #                        arguments=['-sshs', '-NoLogo'])),
+        async_psrp(AsyncSSHInfo('test.wsman.env',
+                                username='vagrant',
+                                password='vagrant',
+                                executable='powershell.exe',
+                                arguments=['-Version', '5.1', '-NoLogo', '-s'])),
 
         # WSMan Scenarios
 

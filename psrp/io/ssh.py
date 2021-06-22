@@ -20,17 +20,17 @@ if HAS_SSH:
             self._buffer = bytearray()
 
         def data_received(self, data, datatype):
-            start_idx = len(self._buffer)
             self._buffer += data
 
-            try:
-                idx = data.index(b'\r\n')
-            except ValueError:
-                return
+            while True:
+                try:
+                    idx = self._buffer.index(b'\r\n')
+                except ValueError:
+                    break
 
-            entry = self._buffer[:start_idx + idx]
-            self.data.put_nowait(entry)
-            self._buffer = self._buffer[start_idx + idx + 2:]
+                entry = self._buffer[:idx]
+                self.data.put_nowait(entry)
+                self._buffer = self._buffer[idx + 2:]
 
 else:
     class _ClientSession:
