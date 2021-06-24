@@ -80,12 +80,9 @@ async def backport_start_tls(
 
 
 class SocketStream:
-    """ Based on httpcore._backends.async.SocketStream"""
-    def __init__(
-            self,
-            stream_reader: asyncio.StreamReader,
-            stream_writer: asyncio.StreamWriter
-    ):
+    """Based on httpcore._backends.async.SocketStream"""
+
+    def __init__(self, stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter):
         self.stream_reader = stream_reader
         self.stream_writer = stream_writer
         self.read_lock = asyncio.Lock()
@@ -94,17 +91,15 @@ class SocketStream:
         self._inner = None
 
     async def read(
-            self,
-            n: int,
-            timeout: TimeoutDict,
+        self,
+        n: int,
+        timeout: TimeoutDict,
     ) -> bytes:
         exc_map = {asyncio.TimeoutError: ReadTimeout, OSError: ReadError}
         async with self.read_lock:
             with map_exceptions(exc_map):
                 try:
-                    return await asyncio.wait_for(
-                        self.stream_reader.read(n), timeout.get("read")
-                    )
+                    return await asyncio.wait_for(self.stream_reader.read(n), timeout.get("read"))
                 except AttributeError as exc:  # pragma: nocover
                     if "resume_reading" in str(exc):
                         # Python's asyncio has a bug that can occur when a
@@ -118,9 +113,9 @@ class SocketStream:
                     raise
 
     async def write(
-            self,
-            data: bytes,
-            timeout: TimeoutDict,
+        self,
+        data: bytes,
+        timeout: TimeoutDict,
     ) -> None:
         if not data:
             return
@@ -129,9 +124,7 @@ class SocketStream:
         async with self.write_lock:
             with map_exceptions(exc_map):
                 self.stream_writer.write(data)
-                return await asyncio.wait_for(
-                    self.stream_writer.drain(), timeout.get("write")
-                )
+                return await asyncio.wait_for(self.stream_writer.drain(), timeout.get("write"))
 
     async def aclose(self) -> None:
         # SSL connections should issue the close and then abort, rather than
@@ -163,10 +156,10 @@ class SocketStream:
                     await self.stream_writer.wait_closed()  # type: ignore
 
     async def start_tls(
-            self,
-            hostname: bytes,
-            ssl_context: ssl.SSLContext,
-            timeout: TimeoutDict,
+        self,
+        hostname: bytes,
+        ssl_context: ssl.SSLContext,
+        timeout: TimeoutDict,
     ) -> "SocketStream":
         loop = asyncio.get_event_loop()
 
@@ -180,7 +173,7 @@ class SocketStream:
         # bypasses that problem.
         # https://github.com/python/cpython/blob/d9151cb45371836d39b6d53afb50c5bcd353c661/Lib/asyncio/base_events.py#L1210-L1212
         # https://github.com/encode/httpcore/issues/254
-        setattr(transport, '_start_tls_compatible', True)
+        setattr(transport, "_start_tls_compatible", True)
 
         loop_start_tls = getattr(loop, "start_tls", backport_start_tls)
 
@@ -192,9 +185,9 @@ class SocketStream:
                     transport,
                     protocol,
                     ssl_context,
-                    server_hostname=hostname.decode('utf-8'),
+                    server_hostname=hostname.decode("utf-8"),
                 ),
-                timeout=timeout.get('connect'),
+                timeout=timeout.get("connect"),
             )
 
         # Initialize the protocol, so it is made aware of being tied to
@@ -202,9 +195,7 @@ class SocketStream:
         # See: https://github.com/encode/httpx/issues/859
         protocol.connection_made(transport)
 
-        stream_writer = asyncio.StreamWriter(
-            transport=transport, protocol=protocol, reader=stream_reader, loop=loop
-        )
+        stream_writer = asyncio.StreamWriter(transport=transport, protocol=protocol, reader=stream_reader, loop=loop)
 
         ssl_stream = SocketStream(stream_reader, stream_writer)
         # When we return a new SocketStream with new StreamReader/StreamWriter instances
@@ -223,15 +214,15 @@ class SocketStream:
 
     @classmethod
     async def open_socket(
-            cls,
-            hostname: typing.Optional[str] = None,
-            port: typing.Optional[int] = None,
-            ssl_context: typing.Optional[ssl.SSLContext] = None,
-            connection_timeout: typing.Optional[float] = None,
-            retries: int = 0,
-            sock: typing.Optional[socket.socket] = None,
-            server_hostname: typing.Optional[str] = None,
-    ) -> 'SocketStream':
+        cls,
+        hostname: typing.Optional[str] = None,
+        port: typing.Optional[int] = None,
+        ssl_context: typing.Optional[ssl.SSLContext] = None,
+        connection_timeout: typing.Optional[float] = None,
+        retries: int = 0,
+        sock: typing.Optional[socket.socket] = None,
+        server_hostname: typing.Optional[str] = None,
+    ) -> "SocketStream":
         delays = exponential_backoff(factor=0.5)
 
         while True:
@@ -240,12 +231,13 @@ class SocketStream:
                 with map_exceptions(exc_map):
                     sr, sw = await asyncio.wait_for(
                         asyncio.open_connection(
-                            host=hostname, port=port, ssl=ssl_context,
-                            sock=sock, server_hostname=server_hostname),
+                            host=hostname, port=port, ssl=ssl_context, sock=sock, server_hostname=server_hostname
+                        ),
                         connection_timeout,
                     )
                     return cls(
-                        stream_reader=sr, stream_writer=sw,
+                        stream_reader=sr,
+                        stream_writer=sw,
                     )
 
             except (ConnectError, ConnectTimeout):
@@ -258,12 +250,13 @@ class SocketStream:
 
 
 class AsyncHTTPConnection(AsyncHTTPTransport):
-    """ Based on httpcore._async.http11.AsyncHTTP11Connection and AsyncHTTPConnection. """
+    """Based on httpcore._async.http11.AsyncHTTP11Connection and AsyncHTTPConnection."""
+
     READ_NUM_BYTES = 64 * 1024
 
     def __init__(
-            self,
-            sock: SocketStream,
+        self,
+        sock: SocketStream,
     ):
         self.socket = sock
         self.request_lock = asyncio.Lock()
@@ -282,12 +275,12 @@ class AsyncHTTPConnection(AsyncHTTPTransport):
                     self.h11_state.send(event)
 
     async def arequest(
-            self,
-            method: bytes,
-            url: URL,
-            headers: Headers = None,
-            stream: AsyncByteStream = None,
-            ext: dict = None,
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers = None,
+        stream: AsyncByteStream = None,
+        ext: dict = None,
     ) -> typing.Tuple[int, Headers, AsyncByteStream, dict]:
         headers = [] if headers is None else headers
         stream = PlainByteStream(b"") if stream is None else stream
@@ -315,11 +308,11 @@ class AsyncHTTPConnection(AsyncHTTPTransport):
         return status_code, headers, response_stream, ext
 
     async def _send_request(
-            self,
-            method: bytes,
-            url: URL,
-            headers: Headers,
-            timeout: TimeoutDict,
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        timeout: TimeoutDict,
     ) -> None:
         """
         Send the request line and headers.
@@ -328,9 +321,7 @@ class AsyncHTTPConnection(AsyncHTTPTransport):
             event = h11.Request(method=method, target=url[3], headers=headers)
         await self._send_event(event, timeout)
 
-    async def _send_request_body(
-        self, stream: AsyncByteStream, timeout: TimeoutDict
-    ) -> None:
+    async def _send_request_body(self, stream: AsyncByteStream, timeout: TimeoutDict) -> None:
         """
         Send the request body.
         """
@@ -352,8 +343,8 @@ class AsyncHTTPConnection(AsyncHTTPTransport):
         await self.socket.write(bytes_to_send, timeout)
 
     async def _receive_response(
-            self,
-            timeout: TimeoutDict,
+        self,
+        timeout: TimeoutDict,
     ) -> typing.Tuple[bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]]]:
         """
         Read the response status and headers from the network.
@@ -374,9 +365,7 @@ class AsyncHTTPConnection(AsyncHTTPTransport):
 
         return http_version, event.status_code, event.reason, headers
 
-    async def _receive_response_data(
-        self, timeout: TimeoutDict
-    ) -> typing.AsyncIterator[bytes]:
+    async def _receive_response_data(self, timeout: TimeoutDict) -> typing.AsyncIterator[bytes]:
         """
         Read the response data from the network.
         """
@@ -388,8 +377,8 @@ class AsyncHTTPConnection(AsyncHTTPTransport):
                 break
 
     async def _receive_event(
-            self,
-            timeout: TimeoutDict,
+        self,
+        timeout: TimeoutDict,
     ) -> H11Event:
         """
         Read a single `h11` event, reading more data from the network if needed.
@@ -407,10 +396,7 @@ class AsyncHTTPConnection(AsyncHTTPTransport):
         return event
 
     async def _response_closed(self) -> None:
-        if (
-            self.h11_state.our_state is h11.DONE
-            and self.h11_state.their_state is h11.DONE
-        ):
+        if self.h11_state.our_state is h11.DONE and self.h11_state.their_state is h11.DONE:
             self.h11_state.start_next_cycle()
             self.state = ConnectionState.IDLE
         else:

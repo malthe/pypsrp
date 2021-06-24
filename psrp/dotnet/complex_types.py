@@ -50,7 +50,7 @@ from .ps_base import (
 
 # We are just using a named tuple for now, this should be a class in the future
 # if CommandInfo is ever implemented.
-_RemoteCommandInfo = collections.namedtuple('RemoteCommandInfo', ['CommandType', 'Name', 'Definition', 'Visibility'])
+_RemoteCommandInfo = collections.namedtuple("RemoteCommandInfo", ["CommandType", "Name", "Definition", "Visibility"])
 
 
 class PSCustomObject(PSObject):
@@ -76,15 +76,16 @@ class PSCustomObject(PSObject):
         PS type name to the instance. It will not add a property with the name
         `PSTypeName`.
     """
+
     PSObject = PSObjectMeta(
-        type_names=['System.Management.Automation.PSCustomObject', 'System.Object'],
+        type_names=["System.Management.Automation.PSCustomObject", "System.Object"],
     )
 
     def __init__(self, **kwargs):
         for prop_name, prop_value in kwargs.items():
             # Special use case with [PSCustomObject]@{PSTypeName = 'TypeName'} in PowerShell where the value is
             # added to the top of the objects type names.
-            if prop_name == 'PSTypeName':
+            if prop_name == "PSTypeName":
                 self.PSObject.type_names.insert(0, prop_value)
 
             else:
@@ -113,7 +114,8 @@ class PSStack(PSStackBase):
     .. _System.Collections.Stack:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Collections.Stack', 'System.Object'])
+
+    PSObject = PSObjectMeta(["System.Collections.Stack", "System.Object"])
 
 
 class PSQueue(PSQueueBase):
@@ -135,7 +137,8 @@ class PSQueue(PSQueueBase):
     .. _System.Collections.Queue:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Collections.Queue', 'System.Object'])
+
+    PSObject = PSObjectMeta(["System.Collections.Queue", "System.Object"])
 
 
 class PSList(PSListBase):
@@ -157,9 +160,10 @@ class PSList(PSListBase):
     .. _System.Collections.ArrayList:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-5.0
     """
+
     # Would prefer an Generic.List<T> but regardless of the type a list is always deserialized by PowerShell as an
     # ArrayList so just do that here.
-    PSObject = PSObjectMeta(['System.Collections.ArrayList', 'System.Object'])
+    PSObject = PSObjectMeta(["System.Collections.ArrayList", "System.Object"])
 
 
 class PSGenericList(PSGenericBase, PSListBase):
@@ -182,10 +186,11 @@ class PSGenericList(PSGenericBase, PSListBase):
     .. _System.Collections.Generic.List<T>:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1?view=net-5.0
     """
+
     PSObject = PSObjectMetaGeneric(
         type_names=[
-            'System.Collections.Generic.List',
-            'System.Object',
+            "System.Collections.Generic.List",
+            "System.Object",
         ],
         required_types=1,
     )
@@ -236,7 +241,8 @@ class PSDict(PSDictBase):
     .. _System.Collections.Hashtable:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Collections.Hashtable', 'System.Object'])
+
+    PSObject = PSObjectMeta(["System.Collections.Hashtable", "System.Object"])
 
 
 class ConsoleColor(PSEnumBase, PSInt):
@@ -256,9 +262,10 @@ class ConsoleColor(PSEnumBase, PSInt):
     .. _[MS-PSRP] 2.2.3.3 Color:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d7edefec-41b1-465d-bc07-2a8ec9d727a1
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.ConsoleColor',
+            "System.ConsoleColor",
         ],
     )
     Black = 0
@@ -292,9 +299,10 @@ class ProgressRecordType(PSEnumBase, PSInt):
     .. _System.Management.Automation.ProgressRecordType:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.progressrecordtype
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.ProgressRecordType',
+            "System.Management.Automation.ProgressRecordType",
         ],
     )
     Processing = 0  #: Operation just started or is not yet complete.
@@ -314,9 +322,10 @@ class PSCredentialTypes(PSFlagBase, PSInt):
     .. _System.Management.Automation.PSCredentialTypes:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredentialtypes
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.PSCredentialTypes',
+            "System.Management.Automation.PSCredentialTypes",
         ]
     )
     Generic = 1  #: Generic credentials.
@@ -337,9 +346,10 @@ class PSCredentialUIOptions(PSFlagBase, PSInt):
     .. _System.Management.Automation.PSCredentialUIOptions:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredentialuioptions
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.PSCredentialUIOptions',
+            "System.Management.Automation.PSCredentialUIOptions",
         ]
     )
     none = 0  #: Performs no validation.
@@ -361,9 +371,10 @@ class SessionStateEntryVisibility(PSEnumBase, PSInt):
     .. _System.Management.Automation.SessionStateEntryVisibility:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.sessionstateentryvisibility
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.SessionStateEntryVisibility',
+            "System.Management.Automation.SessionStateEntryVisibility",
         ],
     )
     Public = 0  #: Entries are visible to requests from outside the runspace.
@@ -386,9 +397,10 @@ class RunspacePoolState(PSEnumBase, PSInt):
     .. _System.Management.Automation.Runspaces.RunspacePoolState:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.runspacepoolstate
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.Runspaces.RunspacePoolState',
+            "System.Management.Automation.Runspaces.RunspacePoolState",
         ],
     )
     BeforeOpen = 0  #: Beginning state upon creation.
@@ -422,9 +434,10 @@ class PSInvocationState(PSEnumBase, PSInt):
     .. _System.Management.Automation.PSInvocationState:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psinvocationstate
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.PSInvocationState',
+            "System.Management.Automation.PSInvocationState",
         ]
     )
     NotStarted = 0  #: Pipeline has not been started
@@ -453,9 +466,10 @@ class PSThreadOptions(PSEnumBase, PSInt):
     .. _System.Management.Automation.Runspaces.PSThreadOptions:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.psthreadoptions
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.Runspaces.PSThreadOptions',
+            "System.Management.Automation.Runspaces.PSThreadOptions",
         ],
     )
     Default = 0  #: Use the server thread option settings.
@@ -481,9 +495,10 @@ class ApartmentState(PSEnumBase, PSInt):
     .. _System.Threading.ApartmentState:
         https://docs.microsoft.com/en-us/dotnet/api/system.threading.apartmentstate?view=net-5.0
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Threading.ApartmentState',
+            "System.Threading.ApartmentState",
         ],
     )
     STA = 0  #: The thread will create and enter a multi-threaded apartment.
@@ -508,9 +523,10 @@ class RemoteStreamOptions(PSFlagBase, PSInt):
     .. _System.Management.Automation.RemoteStreamOptions:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.remotestreamoptions
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.RemoteStreamOptions',
+            "System.Management.Automation.RemoteStreamOptions",
         ],
     )
     none = 0  #: InvocationInfo is not added to any stream record.
@@ -537,9 +553,10 @@ class ErrorCategory(PSEnumBase, PSInt):
     .. _System.Management.Automation.ErrorCategory:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorcategory
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.ErrorCategory',
+            "System.Management.Automation.ErrorCategory",
         ],
     )
     NotSpecified = 0  #: No error category is specified, or the error category is invalid.
@@ -589,10 +606,9 @@ class HostMethodIdentifier(PSEnumBase, PSInt):
     .. _[MS-PSRP] 2.2.3.17 Host Method Identifier:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ddd2a4d1-797d-4d73-8372-7a77a62fb204
     """
+
     PSObject = PSObjectMetaEnum(
-        type_names=[
-            'System.Management.Automation.Remoting.RemoteHostMethodId'
-        ],
+        type_names=["System.Management.Automation.Remoting.RemoteHostMethodId"],
     )
     GetName = 1
     GetVersion = 2
@@ -668,9 +684,10 @@ class CommandTypes(PSFlagBase, PSInt):
     .. _System.Management.Automation.CommandTypes:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.commandtypes
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.CommandTypes',
+            "System.Management.Automation.CommandTypes",
         ],
     )
     Alias = 1  #: Aliases create a name that refers to other command types.
@@ -700,9 +717,10 @@ class ControlKeyStates(PSFlagBase, PSInt):
     .. _System.Management.Automation.Host.ControlKeyStates:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.controlkeystates
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.Host.ControlKeyStates',
+            "System.Management.Automation.Host.ControlKeyStates",
         ],
     )
     RightAltPressed = 1  #: The right alt key is pressed.
@@ -734,9 +752,10 @@ class BufferCellType(PSFlagBase, PSInt):
     .. _System.Management.Automation.Host.BufferCellType:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercelltype
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.Host.ControlKeyStates',
+            "System.Management.Automation.Host.ControlKeyStates",
         ],
     )
     Complete = 0  #: Character occupies one BufferCell.
@@ -760,9 +779,10 @@ class CommandOrigin(PSEnumBase, PSInt):
     .. _System.Management.Automation.CommandOrigin:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.commandorigin
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.CommandOrigin',
+            "System.Management.Automation.CommandOrigin",
         ],
     )
     Runspace = 0  #: The command was submited via a runspace.
@@ -789,9 +809,10 @@ class PipelineResultTypes(PSFlagBase, PSInt):
     .. _System.Management.Automation.Runspaces.PipelineResultTypes:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.pipelineresulttypes
     """
+
     PSObject = PSObjectMetaEnum(
         type_names=[
-            'System.Management.Automation.Runspaces.PipelineResultTypes',
+            "System.Management.Automation.Runspaces.PipelineResultTypes",
         ],
     )
     none = 0  #: Default streaming behaviour.
@@ -823,15 +844,16 @@ class Coordinates(PSObject):
     .. _System.Management.Automation.Host.Coordinates:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.coordinates
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.Host.Coordinates',
-            'System.ValueType',
-            'System.Object',
+            "System.Management.Automation.Host.Coordinates",
+            "System.ValueType",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('X', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('Y', mandatory=True, ps_type=PSInt),
+            PSNoteProperty("X", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("Y", mandatory=True, ps_type=PSInt),
         ],
     )
 
@@ -854,15 +876,16 @@ class Size(PSObject):
     .. _System.Management.Automation.Host.Size:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.size
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.Host.Size',
-            'System.ValueType',
-            'System.Object',
+            "System.Management.Automation.Host.Size",
+            "System.ValueType",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('Width', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('Height', mandatory=True, ps_type=PSInt),
+            PSNoteProperty("Width", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("Height", mandatory=True, ps_type=PSInt),
         ],
     )
 
@@ -900,25 +923,26 @@ class HostDefaultData(PSObject):
     .. _[MS-PSRP] 2.2.3.14 HostInfo:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
+
     PSObject = PSObjectMeta(
         type_names=[],
         extended_properties=[
-            PSAliasProperty('data', '_default_data'),
+            PSAliasProperty("data", "_default_data"),
         ],
     )
 
     def __init__(
-            self,
-            foreground_color: ConsoleColor,
-            background_color: ConsoleColor,
-            cursor_position: Coordinates,
-            window_position: Coordinates,
-            cursor_size: typing.Union[PSInt, int],
-            buffer_size: Size,
-            window_size: Size,
-            max_window_size: Size,
-            max_physical_window_size: Size,
-            window_title: typing.Union[PSString, str],
+        self,
+        foreground_color: ConsoleColor,
+        background_color: ConsoleColor,
+        cursor_position: Coordinates,
+        window_position: Coordinates,
+        cursor_size: typing.Union[PSInt, int],
+        buffer_size: Size,
+        window_size: Size,
+        max_window_size: Size,
+        max_physical_window_size: Size,
+        window_title: typing.Union[PSString, str],
     ):
         super().__init__()
 
@@ -937,8 +961,8 @@ class HostDefaultData(PSObject):
     def _default_data(self):
         def dict_value(value, value_type):
             dict_obj = PSObject()
-            add_note_property(dict_obj, 'T', value_type, ps_type=PSString)
-            add_note_property(dict_obj, 'V', value)
+            add_note_property(dict_obj, "T", value_type, ps_type=PSString)
+            add_note_property(dict_obj, "V", value)
             return dict_obj
 
         def color(value: ConsoleColor):
@@ -946,17 +970,17 @@ class HostDefaultData(PSObject):
 
         def coordinates(value: Coordinates):
             raw = PSObject()
-            add_note_property(raw, 'x', value.X, ps_type=PSInt)
-            add_note_property(raw, 'y', value.Y, ps_type=PSInt)
+            add_note_property(raw, "x", value.X, ps_type=PSInt)
+            add_note_property(raw, "y", value.Y, ps_type=PSInt)
             return dict_value(raw, value.PSObject.type_names[0])
 
         def size(value: Size):
             raw = PSObject()
-            add_note_property(raw, 'width', value.Width, ps_type=PSInt)
-            add_note_property(raw, 'height', value.Height, ps_type=PSInt)
+            add_note_property(raw, "width", value.Width, ps_type=PSInt)
+            add_note_property(raw, "height", value.Height, ps_type=PSInt)
             return dict_value(raw, value.PSObject.type_names[0])
 
-        a = ''
+        a = ""
         return {
             0: color(self.foreground_color),
             1: color(self.background_color),
@@ -972,9 +996,10 @@ class HostDefaultData(PSObject):
 
     @staticmethod
     def from_psobject(
-            data: PSObject,
-    ) -> 'HostDefaultData':
-        """ Convert the raw HostDefaultData PSObject back to this easier to use object. """
+        data: PSObject,
+    ) -> "HostDefaultData":
+        """Convert the raw HostDefaultData PSObject back to this easier to use object."""
+
         def coordinates(value) -> Coordinates:
             return Coordinates(X=value.x, Y=value.y)
 
@@ -1017,24 +1042,25 @@ class HostInfo(PSObject):
     .. _[MS-PSRP] 2.2.3.14 HostInfo:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
+
     PSObject = PSObjectMeta(
         type_names=[],
         extended_properties=[
-            PSAliasProperty('_isHostNull', 'is_host_null', ps_type=PSBool),
-            PSAliasProperty('_isHostUINull', 'is_host_ui_null', ps_type=PSBool),
-            PSAliasProperty('_isHostRawUINull', 'is_host_raw_ui_null', ps_type=PSBool),
-            PSAliasProperty('_useRunspaceHost', 'use_runspace_host', ps_type=PSBool),
-            PSAliasProperty('_hostDefaultData', 'host_default_data', optional=True, ps_type=HostDefaultData),
+            PSAliasProperty("_isHostNull", "is_host_null", ps_type=PSBool),
+            PSAliasProperty("_isHostUINull", "is_host_ui_null", ps_type=PSBool),
+            PSAliasProperty("_isHostRawUINull", "is_host_raw_ui_null", ps_type=PSBool),
+            PSAliasProperty("_useRunspaceHost", "use_runspace_host", ps_type=PSBool),
+            PSAliasProperty("_hostDefaultData", "host_default_data", optional=True, ps_type=HostDefaultData),
         ],
     )
 
     def __init__(
-            self,
-            is_host_null: bool = True,
-            is_host_ui_null: bool = True,
-            is_host_raw_ui_null: bool = True,
-            use_runspace_host: bool = True,
-            host_default_data: typing.Optional[HostDefaultData] = None,
+        self,
+        is_host_null: bool = True,
+        is_host_ui_null: bool = True,
+        is_host_raw_ui_null: bool = True,
+        use_runspace_host: bool = True,
+        host_default_data: typing.Optional[HostDefaultData] = None,
     ):
         super().__init__()
 
@@ -1046,10 +1072,10 @@ class HostInfo(PSObject):
 
     @staticmethod
     def from_psobject(
-            value: PSObject,
-    ) -> 'HostInfo':
-        """ Convert the raw HostInfo PSObject back to this easier to use object. """
-        host_data = getattr(value, '_hostDefaultData', None)
+        value: PSObject,
+    ) -> "HostInfo":
+        """Convert the raw HostInfo PSObject back to this easier to use object."""
+        host_data = getattr(value, "_hostDefaultData", None)
         if host_data is not None:
             host_data = HostDefaultData.from_psobject(host_data)
 
@@ -1078,17 +1104,18 @@ class ScriptPosition(PSObject):
     .. _System.Management.Automation.Language.ScriptPosition:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.language.scriptposition
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.Language.ScriptPosition',
-            'System.Object',
+            "System.Management.Automation.Language.ScriptPosition",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('File', ps_type=PSString),
-            PSNoteProperty('LineNumber', ps_type=PSInt),
-            PSNoteProperty('ColumnNumber', ps_type=PSInt),
-            PSNoteProperty('Line', ps_type=PSString),
-            PSScriptProperty('Offset', lambda o: 0, ps_type=PSInt),  # Not used in pwsh.
+            PSNoteProperty("File", ps_type=PSString),
+            PSNoteProperty("LineNumber", ps_type=PSInt),
+            PSNoteProperty("ColumnNumber", ps_type=PSInt),
+            PSNoteProperty("Line", ps_type=PSString),
+            PSScriptProperty("Offset", lambda o: 0, ps_type=PSInt),  # Not used in pwsh.
         ],
     )
 
@@ -1107,29 +1134,30 @@ class ScriptExtent(PSObject):
     .. _System.Management.Automation.Language.ScriptExtent:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.language.scriptextent
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.Language.ScriptExtent',
-            'System.Object',
+            "System.Management.Automation.Language.ScriptExtent",
+            "System.Object",
         ],
         adapted_properties=[
-            PSScriptProperty('File', lambda o: o._start.File, ps_type=PSString),
-            PSScriptProperty('StartScriptPosition', lambda o: o._start, ps_type=PSString),
-            PSScriptProperty('EndScriptPosition', lambda o: o._end, ps_type=PSString),
-            PSScriptProperty('StartLineNumber', lambda o: o._start.LineNumber, ps_type=PSInt),
-            PSScriptProperty('StartColumnNumber', lambda o: o._start.ColumnNumber, ps_type=PSInt),
-            PSScriptProperty('EndLineNumber', lambda o: o._end.LineNumber, ps_type=PSInt),
-            PSScriptProperty('EndColumnNumber', lambda o: o._end.ColumnNumber, ps_type=PSInt),
-            PSScriptProperty('StartOffset', lambda o: o._start.Offset, ps_type=PSInt),
-            PSScriptProperty('EndOffset', lambda o: o._end.Offset, ps_type=PSInt),
-            PSAliasProperty('Text', '_text', ps_type=PSString),
+            PSScriptProperty("File", lambda o: o._start.File, ps_type=PSString),
+            PSScriptProperty("StartScriptPosition", lambda o: o._start, ps_type=PSString),
+            PSScriptProperty("EndScriptPosition", lambda o: o._end, ps_type=PSString),
+            PSScriptProperty("StartLineNumber", lambda o: o._start.LineNumber, ps_type=PSInt),
+            PSScriptProperty("StartColumnNumber", lambda o: o._start.ColumnNumber, ps_type=PSInt),
+            PSScriptProperty("EndLineNumber", lambda o: o._end.LineNumber, ps_type=PSInt),
+            PSScriptProperty("EndColumnNumber", lambda o: o._end.ColumnNumber, ps_type=PSInt),
+            PSScriptProperty("StartOffset", lambda o: o._start.Offset, ps_type=PSInt),
+            PSScriptProperty("EndOffset", lambda o: o._end.Offset, ps_type=PSInt),
+            PSAliasProperty("Text", "_text", ps_type=PSString),
         ],
     )
 
     def __init__(
-            self,
-            StartPosition: ScriptPosition,
-            EndPosition: ScriptPosition,
+        self,
+        StartPosition: ScriptPosition,
+        EndPosition: ScriptPosition,
     ):
         super().__init__()
         self._start = StartPosition
@@ -1138,23 +1166,23 @@ class ScriptExtent(PSObject):
     @property
     def _text(self) -> PSString:
         if self.EndColumnNumber < 1:
-            val = ''
+            val = ""
 
         elif self.StartLineNumber == self.EndLineNumber:
-            val = self._start.Line[self.StartColumnNumber - 1:self.EndColumnNumber]
+            val = self._start.Line[self.StartColumnNumber - 1 : self.EndColumnNumber]
 
         else:
-            start = self._start.Line[self.StartColumnNumber:]
-            end = self._end.Line[self.EndColumnNumber:]
-            val = f'{start}...{end}'
+            start = self._start.Line[self.StartColumnNumber :]
+            end = self._end.Line[self.EndColumnNumber :]
+            val = f"{start}...{end}"
 
         return PSString(val)
 
 
 def _script_extent_from_ps_object(
-        obj: PSObject,
+    obj: PSObject,
 ) -> ScriptExtent:
-    """ Used by ErrorRecord and InformationalRecord to deserialize the invocation info details. """
+    """Used by ErrorRecord and InformationalRecord to deserialize the invocation info details."""
     file = obj.ScriptExtent_File
     start_line = obj.ScriptExtent_StartLineNumber
     end_line = obj.ScriptExtent_EndLineNumber
@@ -1168,15 +1196,15 @@ def _script_extent_from_ps_object(
 
 
 def _script_extent_to_ps_object(
-        script_extent: ScriptExtent,
-        obj: PSObject,
+    script_extent: ScriptExtent,
+    obj: PSObject,
 ):
-    """ Used by InvocationInfo to serialize the script extent details. """
-    add_note_property(obj, 'ScriptExtent_File', script_extent.File)
-    add_note_property(obj, 'ScriptExtent_StartLineNumber', script_extent.StartLineNumber)
-    add_note_property(obj, 'ScriptExtent_StartColumnNumber', script_extent.StartColumnNumber)
-    add_note_property(obj, 'ScriptExtent_EndLineNumber', script_extent.EndLineNumber)
-    add_note_property(obj, 'ScriptExtent_EndColumnNumber', script_extent.EndColumnNumber)
+    """Used by InvocationInfo to serialize the script extent details."""
+    add_note_property(obj, "ScriptExtent_File", script_extent.File)
+    add_note_property(obj, "ScriptExtent_StartLineNumber", script_extent.StartLineNumber)
+    add_note_property(obj, "ScriptExtent_StartColumnNumber", script_extent.StartColumnNumber)
+    add_note_property(obj, "ScriptExtent_EndLineNumber", script_extent.EndLineNumber)
+    add_note_property(obj, "ScriptExtent_EndColumnNumber", script_extent.EndColumnNumber)
 
 
 class InvocationInfo(PSObject):
@@ -1217,46 +1245,47 @@ class InvocationInfo(PSObject):
     .. _System.Management.Automation.InvocationInfo:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.invocationinfo
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.InvocationInfo',
-            'System.Object',
+            "System.Management.Automation.InvocationInfo",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('BoundParameters', ps_type=PSDict),
-            PSNoteProperty('CommandOrigin', ps_type=CommandOrigin),
-            PSNoteProperty('DisplayScriptPosition', ps_type=ScriptExtent),
-            PSNoteProperty('ExpectingInput', ps_type=PSBool),
-            PSNoteProperty('HistoryId', ps_type=PSInt64),
-            PSNoteProperty('InvocationName', ps_type=PSString),
-            PSNoteProperty('Line', ps_type=PSString),
-            PSNoteProperty('MyCommand'),  # CommandInfo,
-            PSNoteProperty('OffsetInLine', ps_type=PSInt),
-            PSNoteProperty('PipelineLength', ps_type=PSInt),
-            PSNoteProperty('PipelinePosition', ps_type=PSInt),
-            PSNoteProperty('PositionMessage', ps_type=PSString),
-            PSNoteProperty('PSCommandPath', ps_type=PSString),
-            PSNoteProperty('PSScriptRoot', ps_type=PSString),
-            PSNoteProperty('ScriptLineNumber', ps_type=PSInt),
-            PSNoteProperty('ScriptName', ps_type=PSString),
-            PSNoteProperty('UnboundArguments', ps_type=PSList),
+            PSNoteProperty("BoundParameters", ps_type=PSDict),
+            PSNoteProperty("CommandOrigin", ps_type=CommandOrigin),
+            PSNoteProperty("DisplayScriptPosition", ps_type=ScriptExtent),
+            PSNoteProperty("ExpectingInput", ps_type=PSBool),
+            PSNoteProperty("HistoryId", ps_type=PSInt64),
+            PSNoteProperty("InvocationName", ps_type=PSString),
+            PSNoteProperty("Line", ps_type=PSString),
+            PSNoteProperty("MyCommand"),  # CommandInfo,
+            PSNoteProperty("OffsetInLine", ps_type=PSInt),
+            PSNoteProperty("PipelineLength", ps_type=PSInt),
+            PSNoteProperty("PipelinePosition", ps_type=PSInt),
+            PSNoteProperty("PositionMessage", ps_type=PSString),
+            PSNoteProperty("PSCommandPath", ps_type=PSString),
+            PSNoteProperty("PSScriptRoot", ps_type=PSString),
+            PSNoteProperty("ScriptLineNumber", ps_type=PSInt),
+            PSNoteProperty("ScriptName", ps_type=PSString),
+            PSNoteProperty("UnboundArguments", ps_type=PSList),
         ],
     )
 
 
 def _invocation_info_from_ps_object(
-        obj: PSObject,
+    obj: PSObject,
 ) -> InvocationInfo:
-    """ Used by ErrorRecord and InformationalRecord to deserialize the invocation info details. """
-    line = getattr(obj, 'InvocationInfo_Line', None) or ''
-    ps_command_path = ''
-    ps_script_root = ''
+    """Used by ErrorRecord and InformationalRecord to deserialize the invocation info details."""
+    line = getattr(obj, "InvocationInfo_Line", None) or ""
+    ps_command_path = ""
+    ps_script_root = ""
 
-    if getattr(obj, 'SerializeExtent') or False:
+    if getattr(obj, "SerializeExtent") or False:
         display_script_position = _script_extent_from_ps_object(obj)
 
     else:
-        script_name = obj.InvocationInfo_ScriptName or ''
+        script_name = obj.InvocationInfo_ScriptName or ""
         script_line_number = obj.InvocationInfo_ScriptLineNumber
         offset_in_line = obj.InvocationInfo_OffsetInLine
         start_position = ScriptPosition(script_name, script_line_number, offset_in_line, line)
@@ -1272,7 +1301,7 @@ def _invocation_info_from_ps_object(
         ps_script_root = fs_type.dirname(ps_command_path)
 
     my_command = None
-    command_type = getattr(obj, 'CommandInfo_CommandType', None)
+    command_type = getattr(obj, "CommandInfo_CommandType", None)
     if command_type is not None:
         my_command = _RemoteCommandInfo(
             CommandType=CommandTypes(command_type),
@@ -1282,7 +1311,7 @@ def _invocation_info_from_ps_object(
         )
 
     return InvocationInfo(
-        BoundParameters=getattr(obj, 'InvocationInfo_BoundParameters', None) or PSDict(),
+        BoundParameters=getattr(obj, "InvocationInfo_BoundParameters", None) or PSDict(),
         CommandOrigin=CommandOrigin(obj.InvocationInfo_CommandOrigin),
         DisplayScriptPosition=display_script_position,
         ExpectingInput=obj.InvocationInfo_ExpectingInput,
@@ -1297,48 +1326,48 @@ def _invocation_info_from_ps_object(
         PSScriptRoot=ps_script_root,
         ScriptLineNumber=obj.InvocationInfo.ScriptLineNumber,
         ScriptName=obj.InvocationInfo.ScriptName,
-        UnboundArguments=getattr(obj, 'InvocationInfo_UnboundArguments', None) or PSList(),
+        UnboundArguments=getattr(obj, "InvocationInfo_UnboundArguments", None) or PSList(),
     )
 
 
 def _invocation_info_to_ps_object(
-        invocation_info: InvocationInfo,
-        obj: PSObject,
+    invocation_info: InvocationInfo,
+    obj: PSObject,
 ):
-    """ Used by ErrorRecord and InformationalRecord to serialize the invocation info details. """
-    add_note_property(obj, 'InvocationInfo_BoundParameters', invocation_info.BoundParameters)
-    add_note_property(obj, 'InvocationInfo_CommandOrigin', invocation_info.CommandOrigin)
-    add_note_property(obj, 'InvocationInfo_ExpectingInput', invocation_info.ExpectingInput)
-    add_note_property(obj, 'InvocationInfo_InvocationName', invocation_info.InvocationName)
-    add_note_property(obj, 'InvocationInfo_Line', invocation_info.Line)
-    add_note_property(obj, 'InvocationInfo_OffsetInLine', invocation_info.OffsetInLine)
-    add_note_property(obj, 'InvocationInfo_HistoryId', invocation_info.HistoryId)
-    add_note_property(obj, 'InvocationInfo_PipelineIterationInfo', [])  # List of PSInt32
-    add_note_property(obj, 'InvocationInfo_PipelineLength', invocation_info.PipelineLength)
-    add_note_property(obj, 'InvocationInfo_PipelinePosition', invocation_info.PipelinePosition)
-    add_note_property(obj, 'InvocationInfo_PSScriptRoot', invocation_info.PSScriptRoot)
-    add_note_property(obj, 'InvocationInfo_PSCommandPath', invocation_info.PSCommandPath)
-    add_note_property(obj, 'InvocationInfo_PositionMessage', invocation_info.PositionMessage)
-    add_note_property(obj, 'InvocationInfo_ScriptLineNumber', invocation_info.ScriptLineNumber)
-    add_note_property(obj, 'InvocationInfo_ScriptName', invocation_info.ScriptName)
-    add_note_property(obj, 'InvocationInfo_UnboundArguments', invocation_info.UnboundArguments)
+    """Used by ErrorRecord and InformationalRecord to serialize the invocation info details."""
+    add_note_property(obj, "InvocationInfo_BoundParameters", invocation_info.BoundParameters)
+    add_note_property(obj, "InvocationInfo_CommandOrigin", invocation_info.CommandOrigin)
+    add_note_property(obj, "InvocationInfo_ExpectingInput", invocation_info.ExpectingInput)
+    add_note_property(obj, "InvocationInfo_InvocationName", invocation_info.InvocationName)
+    add_note_property(obj, "InvocationInfo_Line", invocation_info.Line)
+    add_note_property(obj, "InvocationInfo_OffsetInLine", invocation_info.OffsetInLine)
+    add_note_property(obj, "InvocationInfo_HistoryId", invocation_info.HistoryId)
+    add_note_property(obj, "InvocationInfo_PipelineIterationInfo", [])  # List of PSInt32
+    add_note_property(obj, "InvocationInfo_PipelineLength", invocation_info.PipelineLength)
+    add_note_property(obj, "InvocationInfo_PipelinePosition", invocation_info.PipelinePosition)
+    add_note_property(obj, "InvocationInfo_PSScriptRoot", invocation_info.PSScriptRoot)
+    add_note_property(obj, "InvocationInfo_PSCommandPath", invocation_info.PSCommandPath)
+    add_note_property(obj, "InvocationInfo_PositionMessage", invocation_info.PositionMessage)
+    add_note_property(obj, "InvocationInfo_ScriptLineNumber", invocation_info.ScriptLineNumber)
+    add_note_property(obj, "InvocationInfo_ScriptName", invocation_info.ScriptName)
+    add_note_property(obj, "InvocationInfo_UnboundArguments", invocation_info.UnboundArguments)
 
     if invocation_info.DisplayScriptPosition:
         _script_extent_to_ps_object(invocation_info.DisplayScriptPosition, obj)
-        add_note_property(obj, 'SerializeExtent', True)
+        add_note_property(obj, "SerializeExtent", True)
 
     else:
-        add_note_property(obj, 'SerializeExtent', False)
+        add_note_property(obj, "SerializeExtent", False)
 
     if invocation_info.MyCommand:
         # This should be a CommandInfo type but we are being pretty lax with the property checks.
         my_command = invocation_info.MyCommand
-        add_note_property(obj, 'CommandInfo_CommandType', getattr(my_command, 'CommandType',
-                                                                  CommandTypes.Application))
-        add_note_property(obj, 'CommandInfo_Definition', getattr(my_command, 'Definition', ''))
-        add_note_property(obj, 'CommandInfo_Name', getattr(my_command, 'Name', ''))
-        add_note_property(obj, 'CommandInfo_Visibility', getattr(my_command, 'Definition',
-                                                                 SessionStateEntryVisibility.Public))
+        add_note_property(obj, "CommandInfo_CommandType", getattr(my_command, "CommandType", CommandTypes.Application))
+        add_note_property(obj, "CommandInfo_Definition", getattr(my_command, "Definition", ""))
+        add_note_property(obj, "CommandInfo_Name", getattr(my_command, "Name", ""))
+        add_note_property(
+            obj, "CommandInfo_Visibility", getattr(my_command, "Definition", SessionStateEntryVisibility.Public)
+        )
 
 
 class ErrorCategoryInfo(PSObject):
@@ -1357,24 +1386,27 @@ class ErrorCategoryInfo(PSObject):
     .. _System.Management.Automation.ErrorCategoryInfo:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorcategoryinfo
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.ErrorCategoryInfo',
-            'System.Object',
+            "System.Management.Automation.ErrorCategoryInfo",
+            "System.Object",
         ],
         adapted_properties=[
             # Technically a string in .NET but it's easier for the end user to be an enum.
-            PSNoteProperty('Category', value=ErrorCategory.NotSpecified, ps_type=ErrorCategory),
-            PSNoteProperty('Activity', ps_type=PSString),
-            PSNoteProperty('Reason', ps_type=PSString),
-            PSNoteProperty('TargetName', ps_type=PSString),
-            PSNoteProperty('TargetType', ps_type=PSString),
+            PSNoteProperty("Category", value=ErrorCategory.NotSpecified, ps_type=ErrorCategory),
+            PSNoteProperty("Activity", ps_type=PSString),
+            PSNoteProperty("Reason", ps_type=PSString),
+            PSNoteProperty("TargetName", ps_type=PSString),
+            PSNoteProperty("TargetType", ps_type=PSString),
         ],
     )
 
     def __str__(self):
-        return f'{self.Category!s} ({self.TargetName or ""}:{self.TargetType or ""}) ' \
-               f'[{self.Activity or ""}], {self.Reason or ""}'
+        return (
+            f'{self.Category!s} ({self.TargetName or ""}:{self.TargetType or ""}) '
+            f'[{self.Activity or ""}], {self.Reason or ""}'
+        )
 
 
 class ErrorDetails(PSObject):
@@ -1395,14 +1427,15 @@ class ErrorDetails(PSObject):
     .. _System.Management.Automation.ErrorDetails:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errordetails
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.ErrorDetails',
-            'System.Object',
+            "System.Management.Automation.ErrorDetails",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('Message', ps_type=PSString),
-            PSNoteProperty('RecommendedAction', ps_type=PSString),
+            PSNoteProperty("Message", ps_type=PSString),
+            PSNoteProperty("RecommendedAction", ps_type=PSString),
         ],
     )
 
@@ -1439,20 +1472,21 @@ class ErrorRecord(PSObject):
     .. _System.Management.Automation.ErrorRecord:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorrecord
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.ErrorRecord',
-            'System.Object',
+            "System.Management.Automation.ErrorRecord",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('Exception', mandatory=True),
-            PSNoteProperty('CategoryInfo', mandatory=True, ps_type=ErrorCategoryInfo),
-            PSNoteProperty('TargetObject'),
-            PSNoteProperty('FullyQualifiedErrorId', ps_type=PSString),
-            PSNoteProperty('InvocationInfo', ps_type=InvocationInfo),
-            PSNoteProperty('ErrorDetails', ps_type=ErrorDetails),
-            PSNoteProperty('PipelineIterationInfo', ps_type=PSGenericList[PSInt]),
-            PSNoteProperty('ScriptStackTrace', ps_type=PSString)
+            PSNoteProperty("Exception", mandatory=True),
+            PSNoteProperty("CategoryInfo", mandatory=True, ps_type=ErrorCategoryInfo),
+            PSNoteProperty("TargetObject"),
+            PSNoteProperty("FullyQualifiedErrorId", ps_type=PSString),
+            PSNoteProperty("InvocationInfo", ps_type=InvocationInfo),
+            PSNoteProperty("ErrorDetails", ps_type=ErrorDetails),
+            PSNoteProperty("PipelineIterationInfo", ps_type=PSGenericList[PSInt]),
+            PSNoteProperty("ScriptStackTrace", ps_type=PSString),
         ],
     )
 
@@ -1469,9 +1503,9 @@ class ErrorRecord(PSObject):
 
     @classmethod
     def FromPSObjectForRemoting(
-            cls,
-            obj: PSObject,
-    ) -> 'ErrorRecord':
+        cls,
+        obj: PSObject,
+    ) -> "ErrorRecord":
         category_info = ErrorCategoryInfo(
             Category=ErrorCategory(obj.ErrorCategory_Category),
             Activity=obj.ErrorCategory_Activity,
@@ -1482,8 +1516,8 @@ class ErrorRecord(PSObject):
         category_info.PSObject.to_string = obj.ErrorCategory_Message
 
         error_details = None
-        error_details_message = getattr(obj, 'ErrorDetails_Message', None)
-        error_details_action = getattr(obj, 'ErrorDetails_RecommendedAction', None)
+        error_details_message = getattr(obj, "ErrorDetails_Message", None)
+        error_details_action = getattr(obj, "ErrorDetails_RecommendedAction", None)
         if error_details_message or error_details_action:
             error_details = ErrorDetails(
                 Message=error_details_message,
@@ -1493,7 +1527,7 @@ class ErrorRecord(PSObject):
         # Technically PowerShell wraps the exception in a RemoteException class which contains
         # 'SerializedRemoteException' and 'SerializedRemoteInvocationInfo'. To make things simple we just use the
         # serialized exception as the actual Exception value and add the invocation info to that.
-        add_note_property(obj.Exception, 'SerializedRemoteInvocationInfo', obj.InvocationInfo)
+        add_note_property(obj.Exception, "SerializedRemoteInvocationInfo", obj.InvocationInfo)
 
         invocation_info = None
         pipeline_iteration_info = None
@@ -1509,42 +1543,42 @@ class ErrorRecord(PSObject):
             CategoryInfo=category_info,
             ErrorDetails=error_details,
             PipelineIterationInfo=pipeline_iteration_info,
-            ScriptStackTrace=getattr(obj, 'ErrorDetails_ScriptStackTrace', None)
+            ScriptStackTrace=getattr(obj, "ErrorDetails_ScriptStackTrace", None),
         )
         record.serialize_extended_info = obj.SerializeExtendedInfo
         return record
 
     @classmethod
     def ToPSObjectForRemoting(
-            cls,
-            instance: 'ErrorRecord',
+        cls,
+        instance: "ErrorRecord",
     ) -> PSObject:
         obj = PSObject()
-        add_note_property(obj, 'Exception', instance.Exception)
-        add_note_property(obj, 'TargetObject', instance.TargetObject)
-        add_note_property(obj, 'FullyQualifiedErrorId', instance.FullyQualifiedErrorId)
-        add_note_property(obj, 'InvocationInfo', instance.InvocationInfo)
-        add_note_property(obj, 'ErrorCategory_Category', int(instance.CategoryInfo.Category))
-        add_note_property(obj, 'ErrorCategory_Activity', instance.CategoryInfo.Activity)
-        add_note_property(obj, 'ErrorCategory_Reason', instance.CategoryInfo.Reason)
-        add_note_property(obj, 'ErrorCategory_TargetName', instance.CategoryInfo.TargetName)
-        add_note_property(obj, 'ErrorCategory_TargetType', instance.CategoryInfo.TargetType)
-        add_note_property(obj, 'ErrorCategory_Message', str(instance.CategoryInfo))
+        add_note_property(obj, "Exception", instance.Exception)
+        add_note_property(obj, "TargetObject", instance.TargetObject)
+        add_note_property(obj, "FullyQualifiedErrorId", instance.FullyQualifiedErrorId)
+        add_note_property(obj, "InvocationInfo", instance.InvocationInfo)
+        add_note_property(obj, "ErrorCategory_Category", int(instance.CategoryInfo.Category))
+        add_note_property(obj, "ErrorCategory_Activity", instance.CategoryInfo.Activity)
+        add_note_property(obj, "ErrorCategory_Reason", instance.CategoryInfo.Reason)
+        add_note_property(obj, "ErrorCategory_TargetName", instance.CategoryInfo.TargetName)
+        add_note_property(obj, "ErrorCategory_TargetType", instance.CategoryInfo.TargetType)
+        add_note_property(obj, "ErrorCategory_Message", str(instance.CategoryInfo))
 
         if instance.ErrorDetails:
-            add_note_property(obj, 'ErrorDetails_Message', instance.ErrorDetails.Message)
-            add_note_property(obj, 'ErrorDetails_RecommendedAction', instance.ErrorDetails.RecommendedAction)
+            add_note_property(obj, "ErrorDetails_Message", instance.ErrorDetails.Message)
+            add_note_property(obj, "ErrorDetails_RecommendedAction", instance.ErrorDetails.RecommendedAction)
 
         if instance.ScriptStackTrace:
-            add_note_property(obj, 'ErrorDetails_ScriptStackTrace', instance.ScriptStackTrace)
+            add_note_property(obj, "ErrorDetails_ScriptStackTrace", instance.ScriptStackTrace)
 
         if instance.serialize_extended_info and instance.InvocationInfo:
-            add_note_property(obj, 'SerializeExtendedInfo', True)
+            add_note_property(obj, "SerializeExtendedInfo", True)
             _invocation_info_to_ps_object(instance.InvocationInfo, obj)
-            add_note_property(obj, 'PipelineIterationInfo', instance.PipelineIterationInfo)
+            add_note_property(obj, "PipelineIterationInfo", instance.PipelineIterationInfo)
 
         else:
-            add_note_property(obj, 'SerializeExtendedInfo', False)
+            add_note_property(obj, "SerializeExtendedInfo", False)
 
         return obj
 
@@ -1576,15 +1610,16 @@ class InformationalRecord(PSObject):
     .. _System.Management.Automation.InformationalRecord:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.informationalrecord
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.InformationalRecord',
-            'System.Object',
+            "System.Management.Automation.InformationalRecord",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('Message', ps_type=PSString),
-            PSNoteProperty('InvocationInfo', ps_type=InvocationInfo),
-            PSNoteProperty('PipelineIterationInfo', ps_type=PSGenericList[PSInt]),
+            PSNoteProperty("Message", ps_type=PSString),
+            PSNoteProperty("InvocationInfo", ps_type=InvocationInfo),
+            PSNoteProperty("PipelineIterationInfo", ps_type=PSGenericList[PSInt]),
         ],
     )
 
@@ -1594,9 +1629,9 @@ class InformationalRecord(PSObject):
 
     @classmethod
     def FromPSObjectForRemoting(
-            cls,
-            obj: PSObject,
-    ) -> 'InformationalRecord':
+        cls,
+        obj: PSObject,
+    ) -> "InformationalRecord":
         invocation_info = None
         pipeline_iteration_info = None
         if obj.InformationalRecord_SerializeInvocationInfo:
@@ -1614,19 +1649,19 @@ class InformationalRecord(PSObject):
 
     @classmethod
     def ToPSObjectForRemoting(
-            cls,
-            instance: 'ErrorRecord',
+        cls,
+        instance: "ErrorRecord",
     ):
         obj = PSObject()
-        add_note_property(obj, 'InformationalRecord_Message', instance.Message)
+        add_note_property(obj, "InformationalRecord_Message", instance.Message)
 
         if instance.serialize_extended_info and instance.InvocationInfo:
-            add_note_property(obj, 'InformationalRecord_SerializeInvocationInfo', True)
+            add_note_property(obj, "InformationalRecord_SerializeInvocationInfo", True)
             _invocation_info_to_ps_object(instance.InvocationInfo, obj)
-            add_note_property(obj, 'InformationalRecord_PipelineIterationInfo', instance.PipelineIterationInfo)
+            add_note_property(obj, "InformationalRecord_PipelineIterationInfo", instance.PipelineIterationInfo)
 
         else:
-            add_note_property(obj, 'InformationalRecord_SerializeInvocationInfo', False)
+            add_note_property(obj, "InformationalRecord_SerializeInvocationInfo", False)
 
         return obj
 
@@ -1643,9 +1678,10 @@ class PSPrimitiveDictionary(PSDict):
     .. _[MS-PSRP] 2.2.3.18 Primitive Dictionary:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/7779aa42-6927-4225-b31c-2771fd869546
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.PSPrimitiveDictionary',
+            "System.Management.Automation.PSPrimitiveDictionary",
         ],
     )
 
@@ -1662,12 +1698,13 @@ class CommandMetadataCount(PSObject):
     .. _[MS-PSRP] 2.2.3.21 CommandMetadataCount:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4647da0c-18e6-496c-9d9e-c669d40dc1db
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.PSCredential',
+            "System.Management.Automation.PSCredential",
         ],
         extended_properties=[
-            PSNoteProperty('Count', mandatory=True, ps_type=PSInt),
+            PSNoteProperty("Count", mandatory=True, ps_type=PSInt),
         ],
     )
 
@@ -1694,13 +1731,14 @@ class PSCredential(PSObject):
     .. _System.Management.Automation.PSCredential:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredential
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Management.Automation.PSCredential',
+            "System.Management.Automation.PSCredential",
         ],
         adapted_properties=[
-            PSNoteProperty('UserName', mandatory=True, ps_type=PSString),
-            PSNoteProperty('Password', mandatory=True, ps_type=PSSecureString),
+            PSNoteProperty("UserName", mandatory=True, ps_type=PSString),
+            PSNoteProperty("Password", mandatory=True, ps_type=PSSecureString),
         ],
     )
 
@@ -1725,13 +1763,14 @@ class PSRPKeyInfo(PSObject):
     .. _System.Management.Automation.Host.KeyInfo:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.keyinfo
     """
+
     PSObject = PSObjectMeta(
         type_names=[],
         extended_properties=[
-            PSNoteProperty('virtualKeyCode', ps_type=PSInt),
-            PSNoteProperty('character', ps_type=PSChar),
-            PSNoteProperty('controlKeyState', ps_type=PSInt),  # ControlKeyStates as integer.
-            PSNoteProperty('keyDown', ps_type=PSBool),
+            PSNoteProperty("virtualKeyCode", ps_type=PSInt),
+            PSNoteProperty("character", ps_type=PSChar),
+            PSNoteProperty("controlKeyState", ps_type=PSInt),  # ControlKeyStates as integer.
+            PSNoteProperty("keyDown", ps_type=PSBool),
         ],
     )
 
@@ -1756,13 +1795,14 @@ class PSRPBufferCell(PSObject):
     .. _System.Management.Automation.Host.BufferCell:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercell
     """
+
     PSObject = PSObjectMeta(
         type_names=[],
         adapted_properties=[
-            PSNoteProperty('character', ps_type=PSChar),
-            PSNoteProperty('foregroundColor', ps_type=ConsoleColor),
-            PSNoteProperty('backgroundColor', ps_type=ConsoleColor),
-            PSNoteProperty('bufferCellType', ps_type=PSInt),  # BufferCellType as integer.
+            PSNoteProperty("character", ps_type=PSChar),
+            PSNoteProperty("foregroundColor", ps_type=ConsoleColor),
+            PSNoteProperty("backgroundColor", ps_type=ConsoleColor),
+            PSNoteProperty("bufferCellType", ps_type=PSInt),  # BufferCellType as integer.
         ],
     )
 
@@ -1784,11 +1824,12 @@ class PSRPChoiceDescription(PSObject):
     .. _System.Management.Automation.Host.ChoiceDescription:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.choicedescription
     """
+
     PSObject = PSObjectMeta(
         type_names=[],
         extended_properties=[
-            PSNoteProperty('helpMessage', ps_type=PSString),
-            PSNoteProperty('label', ps_type=PSString),
+            PSNoteProperty("helpMessage", ps_type=PSString),
+            PSNoteProperty("label", ps_type=PSString),
         ],
     )
 
@@ -1820,19 +1861,20 @@ class PSRPFieldDescription(PSObject):
     .. _System.Management.Automation.Host.FieldDescription:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.fielddescription
     """
+
     PSObject = PSObjectMeta(
         type_names=[],
         extended_properties=[
-            PSNoteProperty('name', ps_type=PSString),
-            PSNoteProperty('label', ps_type=PSString),
-            PSNoteProperty('parameterTypeName', ps_type=PSString),
-            PSNoteProperty('parameterTypeFullName', ps_type=PSString),
-            PSNoteProperty('parameterAssemblyFullName', ps_type=PSString),
-            PSNoteProperty('helpMessage', ps_type=PSString),
-            PSNoteProperty('isMandatory', ps_type=PSBool),
-            PSNoteProperty('metadata', ps_type=PSList),
-            PSNoteProperty('modifiedByRemotingProtocol', ps_type=PSBool),
-            PSNoteProperty('isFromRemoteHost', ps_type=PSBool),
+            PSNoteProperty("name", ps_type=PSString),
+            PSNoteProperty("label", ps_type=PSString),
+            PSNoteProperty("parameterTypeName", ps_type=PSString),
+            PSNoteProperty("parameterTypeFullName", ps_type=PSString),
+            PSNoteProperty("parameterAssemblyFullName", ps_type=PSString),
+            PSNoteProperty("helpMessage", ps_type=PSString),
+            PSNoteProperty("isMandatory", ps_type=PSBool),
+            PSNoteProperty("metadata", ps_type=PSList),
+            PSNoteProperty("modifiedByRemotingProtocol", ps_type=PSBool),
+            PSNoteProperty("isFromRemoteHost", ps_type=PSBool),
         ],
     )
 
@@ -1857,19 +1899,20 @@ class NETException(PSObject):
     .. _System.Exception:
         https://docs.microsoft.com/en-us/dotnet/api/system.exception?view=net-5.0
     """
+
     PSObject = PSObjectMeta(
         type_names=[
-            'System.Exception',
-            'System.Object',
+            "System.Exception",
+            "System.Object",
         ],
         adapted_properties=[
-            PSNoteProperty('Message', mandatory=True, ps_type=PSString),
-            PSNoteProperty('Data', ps_type=PSDict),
-            PSNoteProperty('HelpLink', ps_type=PSString),
-            PSNoteProperty('HResult', ps_type=PSInt),
-            PSNoteProperty('InnerException'),
-            PSNoteProperty('Source', ps_type=PSString),
-            PSNoteProperty('StackTrace', ps_type=PSString),
-            PSNoteProperty('TargetSite', ps_type=PSString),
+            PSNoteProperty("Message", mandatory=True, ps_type=PSString),
+            PSNoteProperty("Data", ps_type=PSDict),
+            PSNoteProperty("HelpLink", ps_type=PSString),
+            PSNoteProperty("HResult", ps_type=PSInt),
+            PSNoteProperty("InnerException"),
+            PSNoteProperty("Source", ps_type=PSString),
+            PSNoteProperty("StackTrace", ps_type=PSString),
+            PSNoteProperty("TargetSite", ps_type=PSString),
         ],
     )

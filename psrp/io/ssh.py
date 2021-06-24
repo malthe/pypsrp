@@ -13,8 +13,8 @@ except ImportError:
 
 
 if HAS_SSH:
-    class _ClientSession(asyncssh.SSHClientSession):
 
+    class _ClientSession(asyncssh.SSHClientSession):
         def __init__(self):
             self.data = asyncio.Queue()
             self._buffer = bytearray()
@@ -24,26 +24,27 @@ if HAS_SSH:
 
             while True:
                 try:
-                    idx = self._buffer.index(b'\r\n')
+                    idx = self._buffer.index(b"\r\n")
                 except ValueError:
                     break
 
                 entry = self._buffer[:idx]
                 self.data.put_nowait(entry)
-                self._buffer = self._buffer[idx + 2:]
+                self._buffer = self._buffer[idx + 2 :]
+
 
 else:
+
     class _ClientSession:
         pass
 
 
 class SSH:
-
     def __init__(
-            self,
+        self,
     ):
         if not HAS_SSH:
-            raise ImportError('Requires ssh library')
+            raise ImportError("Requires ssh library")
 
         self._write_lock = threading.Lock()
         self._ssh = None
@@ -70,16 +71,15 @@ class SSH:
 
 
 class AsyncSSH(SSH):
-
     def __init__(
-            self,
-            hostname: str,
-            port: int = 22,
-            username: typing.Optional[str] = None,
-            password: typing.Optional[str] = None,
-            subsystem: str = 'powershell',
-            executable: typing.Optional[str] = None,
-            arguments: typing.Optional[typing.List[str]] = None,
+        self,
+        hostname: str,
+        port: int = 22,
+        username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
+        subsystem: str = "powershell",
+        executable: typing.Optional[str] = None,
+        arguments: typing.Optional[typing.List[str]] = None,
     ):
         super().__init__()
         self._hostname = hostname
@@ -132,14 +132,17 @@ class AsyncSSH(SSH):
         if self._executable:
             cmd = [self._executable]
             cmd.extend(self._arguments)
-            cmd = ' '.join(cmd)
+            cmd = " ".join(cmd)
             subsystem = None
 
         else:
             subsystem = self._subsystem
 
         self._channel, self._session = await self._ssh.create_session(
-            _ClientSession, command=cmd, subsystem=subsystem, encoding=None,
+            _ClientSession,
+            command=cmd,
+            subsystem=subsystem,
+            encoding=None,
         )
 
     async def read(self) -> typing.Optional[bytes]:
@@ -149,8 +152,8 @@ class AsyncSSH(SSH):
         return data
 
     async def write(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ):
         async with self._write_lock:
             print("Write\t" + data.decode().strip())

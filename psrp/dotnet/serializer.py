@@ -74,23 +74,24 @@ log = logging.getLogger(__name__)
 
 
 # Finds _x in a case insensitive way which we need to escape first as '_x' is the escape code.
-_STRING_SERIAL_ESCAPE_ESCAPE = re.compile('(?i)_(x)')
+_STRING_SERIAL_ESCAPE_ESCAPE = re.compile("(?i)_(x)")
 
 # Finds C0, C1, and surrogate pairs in a unicode string for us to encode according to the PSRP rules.
-_STRING_SERIAL_ESCAPE = re.compile('[\u0000-\u001F\u007F-\u009F\U00010000-\U0010FFFF]')
+_STRING_SERIAL_ESCAPE = re.compile("[\u0000-\u001F\u007F-\u009F\U00010000-\U0010FFFF]")
 
 # To support surrogate UTF-16 pairs we need to use a UTF-16 regex so we can replace the UTF-16 string representation
 # with the actual UTF-16 byte value and then decode that.
-_STRING_DESERIAL_FIND = re.compile(b'\\x00_\\x00x([\\0\\w]{8})\\x00_')
+_STRING_DESERIAL_FIND = re.compile(b"\\x00_\\x00x([\\0\\w]{8})\\x00_")
 
 # Python datetime only supports up to microsecond precision but .NET can go to 100 nanoseconds. To support this level
 # of precision we need to extract the fractional seconds part of a datetime ourselves and compute the value.
-_DATETIME_FRACTION_PATTERN = re.compile(r'\.(\d+)(.*)')
+_DATETIME_FRACTION_PATTERN = re.compile(r"\.(\d+)(.*)")
 
 # Need to extract the Day, Hour, Minute, Second fields from a XML Duration format. Slightly modified from the below.
 # Has named capturing groups, no years or months are allowed and the seconds can only be up to 7 decimal places.
 # https://stackoverflow.com/questions/52644699/validate-a-xsduration-using-a-regular-expression-in-javascript
-_DURATION_PATTERN = re.compile(r'''
+_DURATION_PATTERN = re.compile(
+    r"""
 ^(?P<negative>-?)                         # Can start with - to denote a negative duration.
 P(?=.)                                    # Must start with P and contain one of the following matches.
     ((?P<days>\d+)D)?                     # Number of days.
@@ -100,12 +101,14 @@ P(?=.)                                    # Must start with P and contain one of
         ((?P<seconds>\d*                  # Number of seconds, can be a decimal number up to 7 decimal places.
         (\.(?P<fraction>\d{1,7}))?)S)?    # Optional fractional seconds as a 2nd capturing group.
     )?                                    # T is optional, the pos lookahead ensures either T or days is present.
-$''', re.VERBOSE)
+$""",
+    re.VERBOSE,
+)
 
 
 def deserialize(
-        value: ElementTree.Element,
-        cipher: typing.Optional[CryptoProvider] = None,
+    value: ElementTree.Element,
+    cipher: typing.Optional[CryptoProvider] = None,
 ) -> typing.Optional[typing.Union[bool, PSObject]]:
     """Deserialize CLIXML to a Python object.
 
@@ -122,8 +125,8 @@ def deserialize(
 
 
 def serialize(
-        value: typing.Optional[typing.Any],
-        cipher: typing.Optional[CryptoProvider] = None,
+    value: typing.Optional[typing.Any],
+    cipher: typing.Optional[CryptoProvider] = None,
 ) -> ElementTree.Element:
     """Serialize the Python object to CLIXML.
 
@@ -140,7 +143,7 @@ def serialize(
 
 
 def _deserialize_datetime(
-        value: str,
+    value: str,
 ) -> PSDateTime:
     """Deserializes a CLIXML DateTime string.
 
@@ -170,23 +173,23 @@ def _deserialize_datetime(
 
         timezone_section = fraction_match.group(2)
 
-        datetime_str += f'.{fractional_seconds}{timezone_section}'
+        datetime_str += f".{fractional_seconds}{timezone_section}"
     else:
         # No fractional seconds, just use strptime on the original value.
         datetime_str = value
 
     try:
-        dt = PSDateTime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%S.%f%z')
+        dt = PSDateTime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S.%f%z")
     except ValueError:
         # Try without fractional seconds
-        dt = PSDateTime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%S%z')
+        dt = PSDateTime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S%z")
     dt.nanosecond = nanoseconds
 
     return dt
 
 
 def _deserialize_duration(
-        value: str,
+    value: str,
 ) -> PSDuration:
     """Deserializes a CLIXML Duration.
 
@@ -203,16 +206,16 @@ def _deserialize_duration(
         raise ValueError(f"Duration input '{value}' is not valid, cannot deserialize")
     matches = duration_match.groupdict()
 
-    is_negative = bool(matches['negative'])
-    days = int(matches['days'] or 0)
-    hours = int(matches['hours'] or 0)
-    minutes = int(matches['minutes'] or 0)
+    is_negative = bool(matches["negative"])
+    days = int(matches["days"] or 0)
+    hours = int(matches["hours"] or 0)
+    minutes = int(matches["minutes"] or 0)
 
-    seconds = int(float(matches['seconds'] or 0))
+    seconds = int(float(matches["seconds"] or 0))
     seconds += minutes * 60
     seconds += hours * 3600
     seconds += days * 86400
-    nanoseconds = int((matches['fraction'] or '').ljust(7, '0')) * 100
+    nanoseconds = int((matches["fraction"] or "").ljust(7, "0")) * 100
 
     total = (seconds * 1000000000) + nanoseconds
     if is_negative:
@@ -222,8 +225,8 @@ def _deserialize_duration(
 
 
 def _deserialize_secure_string(
-        value: str,
-        cipher: CryptoProvider,
+    value: str,
+    cipher: CryptoProvider,
 ) -> PSSecureString:
     """Deserializes a CLIXML SecureString.
 
@@ -242,11 +245,11 @@ def _deserialize_secure_string(
     b_enc = base64.b64decode(value)
     b_dec = cipher.decrypt(b_enc)
 
-    return PSSecureString(b_dec.decode('utf-16-le'))
+    return PSSecureString(b_dec.decode("utf-16-le"))
 
 
 def _deserialize_string(
-        value: str,
+    value: str,
 ) -> str:
     """Deserializes a CLIXML string value.
 
@@ -259,6 +262,7 @@ def _deserialize_string(
     Returns:
         (str): The Python str value that represents the actual string represented by the CLIXML.
     """
+
     def rplcr(matchobj):
         # The matched object is the UTF-16 byte representation of the UTF-8 hex string value. We need to decode the
         # byte str to unicode and then unhexlify that hex string to get the actual bytes of the _x****_ value, e.g.
@@ -267,19 +271,19 @@ def _deserialize_string(
         # unicode (from utf-16-be) == '000A'
         # returns b'\x00\x0A'
         match_hex = matchobj.group(1)
-        hex_string = match_hex.decode('utf-16-be')
+        hex_string = match_hex.decode("utf-16-be")
         return binascii.unhexlify(hex_string)
 
     # Need to ensure we start with a unicode representation of the string so that we can get the actual UTF-16 bytes
     # value from that string.
-    b_value = value.encode('utf-16-be')
+    b_value = value.encode("utf-16-be")
     b_escaped = re.sub(_STRING_DESERIAL_FIND, rplcr, b_value)
 
-    return b_escaped.decode('utf-16-be')
+    return b_escaped.decode("utf-16-be")
 
 
 def _serialize_datetime(
-        value: typing.Union[PSDateTime, datetime.datetime],
+    value: typing.Union[PSDateTime, datetime.datetime],
 ) -> str:
     """Serializes a datetime to a .NET DateTime CLIXML value.
 
@@ -293,26 +297,26 @@ def _serialize_datetime(
         str: The .NET DateTime CLIXML string value.
     """
     fraction_seconds = ""
-    nanoseconds = getattr(value, 'nanosecond', None)
+    nanoseconds = getattr(value, "nanosecond", None)
     if value.microsecond or nanoseconds:
-        fraction_seconds = value.strftime('.%f')
+        fraction_seconds = value.strftime(".%f")
 
         if nanoseconds:
             fraction_seconds += str(nanoseconds // 100)
 
-    timezone = 'Z'
+    timezone = "Z"
     if value.tzinfo:
         # Python's timezone strftime format doesn't quite match up with the .NET one.
-        utc_offset = value.strftime('%z')
-        timezone = f'{utc_offset[:3]}:{utc_offset[3:]}'
+        utc_offset = value.strftime("%z")
+        timezone = f"{utc_offset[:3]}:{utc_offset[3:]}"
 
-    dt_str = value.strftime(f'%Y-%m-%dT%H:%M:%S{fraction_seconds}{timezone}')
+    dt_str = value.strftime(f"%Y-%m-%dT%H:%M:%S{fraction_seconds}{timezone}")
 
     return dt_str
 
 
 def _serialize_duration(
-        value: typing.Union[PSDuration, datetime.timedelta],
+    value: typing.Union[PSDuration, datetime.timedelta],
 ) -> str:
     """Serialzies a duration to a .NET TimeSpan CLIXML value.
 
@@ -328,35 +332,35 @@ def _serialize_duration(
     # We can only go to 100s of nanoseconds in .NET.
     total_ticks = _timedelta_total_nanoseconds(value) // 100
 
-    negative_str = ''
+    negative_str = ""
     if total_ticks < 0:
-        negative_str = '-'
+        negative_str = "-"
         total_ticks *= -1
 
     days, total_ticks = divmod(total_ticks, 864000000000)
 
-    days_str = f'{days}D' if days else ''
-    time_str = ''
+    days_str = f"{days}D" if days else ""
+    time_str = ""
     if total_ticks or days == 0:
         hours, total_ticks = divmod(total_ticks, 36000000000)
         minutes, total_ticks = divmod(total_ticks, 600000000)
         seconds = total_ticks / 10000000
 
-        days_str = f'{days}D' if days else ''
-        hours_str = f'{hours}H' if hours else ''
-        minutes_str = f'{minutes}M' if minutes else ''
-        seconds_str = f'{seconds:.7f}' if (seconds or (not hours_str and not minutes_str)) else ''
+        days_str = f"{days}D" if days else ""
+        hours_str = f"{hours}H" if hours else ""
+        minutes_str = f"{minutes}M" if minutes else ""
+        seconds_str = f"{seconds:.7f}" if (seconds or (not hours_str and not minutes_str)) else ""
         if seconds_str:
-            seconds_str = seconds_str.rstrip('.0').zfill(1) + 'S'
+            seconds_str = seconds_str.rstrip(".0").zfill(1) + "S"
 
-        time_str = f'T{hours_str}{minutes_str}{seconds_str}'
+        time_str = f"T{hours_str}{minutes_str}{seconds_str}"
 
-    return f'{negative_str}P{days_str}{time_str}'
+    return f"{negative_str}P{days_str}{time_str}"
 
 
 def _serialize_secure_string(
-        value: PSSecureString,
-        cipher: CryptoProvider,
+    value: PSSecureString,
+    cipher: CryptoProvider,
 ) -> str:
     """Serializes a string as a .NET SecureString CLIXML value.
 
@@ -371,14 +375,14 @@ def _serialize_secure_string(
         raise MissingCipherError()
 
     # Convert the string to a UTF-16 byte string as that is what is expected in Windows.
-    b_value = value.encode('utf-16-le')
+    b_value = value.encode("utf-16-le")
     b_enc = cipher.encrypt(b_value)
 
     return base64.b64encode(b_enc).decode()
 
 
 def _serialize_string(
-        value: typing.Union[PSString, str],
+    value: typing.Union[PSString, str],
 ) -> str:
     """Serializes a string like value to a .NET String CLIXML value.
 
@@ -391,18 +395,19 @@ def _serialize_string(
     Returns:
         str: The string value as a valid CLIXML escaped string.
     """
+
     def rplcr(matchobj):
         surrogate_char = matchobj.group(0)
-        byte_char = surrogate_char.encode('utf-16-be')
+        byte_char = surrogate_char.encode("utf-16-be")
         hex_char = binascii.hexlify(byte_char).decode().upper()
-        hex_split = [hex_char[i:i + 4] for i in range(0, len(hex_char), 4)]
+        hex_split = [hex_char[i : i + 4] for i in range(0, len(hex_char), 4)]
 
-        return ''.join([f'_x{i}_' for i in hex_split])
+        return "".join([f"_x{i}_" for i in hex_split])
 
     # Before running the translation we need to make sure _ before x is encoded, normally _ isn't encoded except
     # when preceding x. The MS-PSRP docs don't state this but the _x0000_ matcher is case insensitive so we need to
     # make sure we escape _X as well as _x.
-    value = re.sub(_STRING_SERIAL_ESCAPE_ESCAPE, '_x005F_\\1', value)
+    value = re.sub(_STRING_SERIAL_ESCAPE_ESCAPE, "_x005F_\\1", value)
     value = re.sub(_STRING_SERIAL_ESCAPE, rplcr, value)
 
     return value
@@ -420,8 +425,8 @@ class _Serializer:
     """
 
     def __init__(
-            self,
-            cipher: typing.Optional[CryptoProvider] = None,
+        self,
+        cipher: typing.Optional[CryptoProvider] = None,
     ):
         self._cipher = cipher
 
@@ -434,31 +439,31 @@ class _Serializer:
         self._tn_ref_map: typing.Dict[str, typing.List[str]] = {}
 
     def serialize(
-            self,
-            value: typing.Any,
+        self,
+        value: typing.Any,
     ) -> ElementTree.Element:
-        """ Serialize a Python object to a XML element based on the CLIXML value. """
+        """Serialize a Python object to a XML element based on the CLIXML value."""
         # If the value type has a ToPSObjectForRemoting class method we use that to build our true PSObject that will
         # be serialized.
         value_type = type(value)
-        ps_object = getattr(value, 'PSObject', None)
+        ps_object = getattr(value, "PSObject", None)
 
-        if hasattr(value_type, 'ToPSObjectForRemoting'):
+        if hasattr(value_type, "ToPSObjectForRemoting"):
             value = value_type.ToPSObjectForRemoting(value)
 
-            if ps_object and hasattr(value, 'PSObject'):
+            if ps_object and hasattr(value, "PSObject"):
                 value.PSObject.type_names = ps_object.type_names
                 value.PSObject.to_string = ps_object.to_string
 
-            if hasattr(value, 'PSObject'):
+            if hasattr(value, "PSObject"):
                 ps_object = value.PSObject
 
         element = None
         if value is None:
-            element = ElementTree.Element('Nil')
+            element = ElementTree.Element("Nil")
 
         elif isinstance(value, bool):
-            element = ElementTree.Element('B')
+            element = ElementTree.Element("B")
             element.text = str(value).lower()
 
         elif isinstance(value, (PSByteArray, bytes)):
@@ -474,23 +479,26 @@ class _Serializer:
             element.text = _serialize_duration(value)
 
         # Integer types
-        elif isinstance(value, (
-            int,
-            float,
-            decimal.Decimal,
-            PSChar,
-            PSSByte,
-            PSInt16,
-            PSInt,
-            PSInt64,
-            PSByte,
-            PSUInt16,
-            PSUInt,
-            PSUInt64,
-            PSSingle,
-            PSDouble,
-            PSDecimal,
-        )):
+        elif isinstance(
+            value,
+            (
+                int,
+                float,
+                decimal.Decimal,
+                PSChar,
+                PSSByte,
+                PSInt16,
+                PSInt,
+                PSInt64,
+                PSByte,
+                PSUInt16,
+                PSUInt,
+                PSUInt64,
+                PSSingle,
+                PSDouble,
+                PSDecimal,
+            ),
+        ):
             # Need to test each integral integer type in case we are dealing with an enum. This is needed so we get the
             # correct tag for the XML element
             enum_types = [PSByte, PSByte, PSInt16, PSUInt16, PSInt, PSUInt, PSInt64, PSUInt64]
@@ -518,11 +526,14 @@ class _Serializer:
             element.text = str(xml_value).upper()  # upper() needed for the Double and Single types.
 
         # Naive strings
-        elif isinstance(value, (
-            uuid.UUID,
-            PSGuid,
-            PSVersion,
-        )):
+        elif isinstance(
+            value,
+            (
+                uuid.UUID,
+                PSGuid,
+                PSVersion,
+            ),
+        ):
             if isinstance(value, PSObject):
                 ps_type = type(value)
             else:
@@ -537,10 +548,13 @@ class _Serializer:
             element.text = _serialize_secure_string(value, self._cipher)
 
         # String types that need escaping
-        elif isinstance(value, (
-            str,
-            PSString,  # URI, XML, ScriptBlocks inherit PSString so they are included here.
-        )):
+        elif isinstance(
+            value,
+            (
+                str,
+                PSString,  # URI, XML, ScriptBlocks inherit PSString so they are included here.
+            ),
+        ):
             if isinstance(value, PSObject):
                 ps_type = type(value)
             else:
@@ -552,8 +566,11 @@ class _Serializer:
         # These types of objects need to be placed inside a '<Obj></Obj>' entry.
         is_complex = element is None
         is_enum = isinstance(value, PSEnumBase)
-        is_extended_primitive = not is_complex and isinstance(value, PSObject) and \
-            bool(value.PSObject.adapted_properties or value.PSObject.extended_properties)
+        is_extended_primitive = (
+            not is_complex
+            and isinstance(value, PSObject)
+            and bool(value.PSObject.adapted_properties or value.PSObject.extended_properties)
+        )
 
         if not (is_complex or is_extended_primitive or is_enum):
             return element
@@ -561,18 +578,18 @@ class _Serializer:
         obj_id = id(value)
         if obj_id in self._obj_ref_list:
             ref_id = self._obj_ref_list.index(obj_id)
-            return ElementTree.Element('Ref', RefId=str(ref_id))
+            return ElementTree.Element("Ref", RefId=str(ref_id))
 
         self._obj_ref_list.append(obj_id)
         ref_id = self._obj_ref_list.index(obj_id)
 
         if not is_complex:
             sub_element = element
-            element = ElementTree.Element('Obj', RefId=str(ref_id))
+            element = ElementTree.Element("Obj", RefId=str(ref_id))
             element.append(sub_element)
 
         else:
-            element = ElementTree.Element('Obj', RefId=str(ref_id))
+            element = ElementTree.Element("Obj", RefId=str(ref_id))
 
         if ps_object is None:
             # Handle edge cases for known Python container types, otherwise default to a PSCustomObject.
@@ -596,19 +613,19 @@ class _Serializer:
 
             if is_ref:
                 ref_id = self._tn_ref_list.index(main_type)
-                ElementTree.SubElement(element, 'TNRef', RefId=str(ref_id))
+                ElementTree.SubElement(element, "TNRef", RefId=str(ref_id))
 
             else:
                 self._tn_ref_list.append(main_type)
                 ref_id = self._tn_ref_list.index(main_type)
 
-                tn = ElementTree.SubElement(element, 'TN', RefId=str(ref_id))
+                tn = ElementTree.SubElement(element, "TN", RefId=str(ref_id))
                 for type_name in type_names:
-                    ElementTree.SubElement(tn, 'T').text = type_name
+                    ElementTree.SubElement(tn, "T").text = type_name
 
         no_props = True
-        for xml_name, prop_type in [('Props', 'adapted'), ('MS', 'extended')]:
-            properties = getattr(ps_object, f'{prop_type}_properties')
+        for xml_name, prop_type in [("Props", "adapted"), ("MS", "extended")]:
+            properties = getattr(ps_object, f"{prop_type}_properties")
             if not properties:
                 continue
 
@@ -622,7 +639,7 @@ class _Serializer:
                     continue
 
                 prop_element = self.serialize(prop_value)
-                prop_element.attrib['N'] = _serialize_string(prop.name)
+                prop_element.attrib["N"] = _serialize_string(prop.name)
                 prop_elements.append(prop_element)
 
         if isinstance(value, (PSStackBase, PSListBase, list)):
@@ -647,63 +664,65 @@ class _Serializer:
             dct_element = ElementTree.SubElement(element, PSDictBase.PSObject.tag)
 
             for dct_key, dct_value in value.items():
-                en_element = ElementTree.SubElement(dct_element, 'En')
+                en_element = ElementTree.SubElement(dct_element, "En")
 
                 s_dct_key = self.serialize(dct_key)
-                s_dct_key.attrib['N'] = 'Key'
+                s_dct_key.attrib["N"] = "Key"
                 en_element.append(s_dct_key)
 
                 s_dct_value = self.serialize(dct_value)
-                s_dct_value.attrib['N'] = 'Value'
+                s_dct_value.attrib["N"] = "Value"
                 en_element.append(s_dct_value)
 
         else:
             to_string = None if is_extended_primitive and not is_enum else ps_object.to_string
             if to_string:
-                ElementTree.SubElement(element, 'ToString').text = to_string
+                ElementTree.SubElement(element, "ToString").text = to_string
 
             if is_complex and no_props and not isinstance(value, PSObject):
                 # If this was a complex object but no properties were defined we consider this a normal Python
                 # class instance to serialize. We use the instance attributes and properties to create the CLIXML.
                 prop_element = None
-                private_prefix = f'_{type(value).__name__}__'  # Double underscores appear as _{class name}__{name}
+                private_prefix = f"_{type(value).__name__}__"  # Double underscores appear as _{class name}__{name}
                 for prop in dir(value):
                     prop_value = getattr(value, prop)
 
-                    if prop == 'PSObject' or \
-                            prop.startswith('__') or \
-                            prop.startswith(private_prefix) or \
-                            callable(prop_value):
+                    if (
+                        prop == "PSObject"
+                        or prop.startswith("__")
+                        or prop.startswith(private_prefix)
+                        or callable(prop_value)
+                    ):
                         continue
 
                     elif not prop_element:
-                        prop_element = ElementTree.SubElement(element, 'MS')
+                        prop_element = ElementTree.SubElement(element, "MS")
 
                     sub_element = self.serialize(prop_value)
-                    sub_element.attrib['N'] = _serialize_string(prop)
+                    sub_element.attrib["N"] = _serialize_string(prop)
                     prop_element.append(sub_element)
 
         return element
 
     def deserialize(
-            self,
-            element: ElementTree.Element,
+        self,
+        element: ElementTree.Element,
     ) -> typing.Any:
-        """ Deserializes a XML element of the CLIXML value to a Python type. """
+        """Deserializes a XML element of the CLIXML value to a Python type."""
         # These types are pure primitive types and we don't need to do anything special when de-serializing
         element_tag = element.tag
 
-        if element.tag == 'Ref':
-            return self._obj_ref_map[element.attrib['RefId']]
+        if element.tag == "Ref":
+            return self._obj_ref_map[element.attrib["RefId"]]
 
-        if element_tag == 'Nil':
+        if element_tag == "Nil":
             return None
 
-        elif element_tag == 'B':
+        elif element_tag == "B":
             # Technically can be an extended primitive but due to limitations in Python we cannot subclass bool.
-            return element.text.lower() == 'true'
+            return element.text.lower() == "true"
 
-        elif element_tag == 'ToString':
+        elif element_tag == "ToString":
             return _deserialize_string(element.text)
 
         elif element_tag == PSSecureString.PSObject.tag:
@@ -722,48 +741,54 @@ class _Serializer:
             return _deserialize_duration(element.text)
 
         # Rely on the type to parse the value
-        type_map = {cls.PSObject.tag: cls for cls in [
-            PSByte,
-            PSDecimal,
-            PSDouble,
-            PSGuid,
-            PSInt16,
-            PSInt,
-            PSInt64,
-            PSSByte,
-            PSSingle,
-            PSUInt16,
-            PSUInt,
-            PSUInt64,
-            PSVersion,
-        ]}
+        type_map = {
+            cls.PSObject.tag: cls
+            for cls in [
+                PSByte,
+                PSDecimal,
+                PSDouble,
+                PSGuid,
+                PSInt16,
+                PSInt,
+                PSInt64,
+                PSSByte,
+                PSSingle,
+                PSUInt16,
+                PSUInt,
+                PSUInt64,
+                PSVersion,
+            ]
+        }
         if element_tag in type_map:
             return type_map[element_tag](element.text)
 
         # String types
-        type_map = {cls.PSObject.tag: cls for cls in [
-            PSScriptBlock,
-            PSString,
-            PSUri,
-            PSXml,
-        ]}
+        type_map = {
+            cls.PSObject.tag: cls
+            for cls in [
+                PSScriptBlock,
+                PSString,
+                PSUri,
+                PSXml,
+            ]
+        }
         if element_tag in type_map:
             # Empty strings are `<S />` which means element.text is None.
-            return type_map[element_tag](_deserialize_string(element.text or ''))
+            return type_map[element_tag](_deserialize_string(element.text or ""))
 
         # By now we should have an Obj, if not something has gone wrong.
-        if element_tag != 'Obj':
-            raise ValueError(f'Unknown element found: {element.tag}')
+        if element_tag != "Obj":
+            raise ValueError(f"Unknown element found: {element.tag}")
 
-        type_names = [e.text for e in element.findall('TN/T')]
+        type_names = [e.text for e in element.findall("TN/T")]
         if type_names:
-            tn_ref_id = element.find('TN').attrib['RefId']
+            tn_ref_id = element.find("TN").attrib["RefId"]
             self._tn_ref_map[tn_ref_id] = type_names
 
         else:
-            tn_ref = element.find('TNRef')
+            tn_ref = element.find("TNRef")
             if tn_ref is not None:
-                tn_ref_id = tn_ref.attrib['RefId']
+                tn_ref_id = tn_ref.attrib["RefId"]
                 type_names = self._tn_ref_map[tn_ref_id]
 
         # Build the starting value based on the registered types. This could either be a rehydrated class that has been
@@ -772,23 +797,29 @@ class _Serializer:
         original_type_names = value.PSTypeNames
 
         props = {
-            'adapted_properties': None,
-            'extended_properties': None,
+            "adapted_properties": None,
+            "extended_properties": None,
         }
         for obj_entry in element:
-            if obj_entry.tag == 'Props':
-                props['adapted_properties'] = obj_entry
+            if obj_entry.tag == "Props":
+                props["adapted_properties"] = obj_entry
 
-            elif obj_entry.tag == 'MS':
-                props['extended_properties'] = obj_entry
+            elif obj_entry.tag == "MS":
+                props["extended_properties"] = obj_entry
 
-            elif obj_entry.tag == 'ToString':
+            elif obj_entry.tag == "ToString":
                 value.PSObject.to_string = self.deserialize(obj_entry)
 
             elif obj_entry.tag == PSDictBase.PSObject.tag:
-                raw_values = dict([(self.deserialize(dict_entry.find('*/[@N="Key"]')),
-                                    self.deserialize(dict_entry.find('*/[@N="Value"]')))
-                                   for dict_entry in obj_entry])
+                raw_values = dict(
+                    [
+                        (
+                            self.deserialize(dict_entry.find('*/[@N="Key"]')),
+                            self.deserialize(dict_entry.find('*/[@N="Value"]')),
+                        )
+                        for dict_entry in obj_entry
+                    ]
+                )
 
                 dict_type = type(value) if isinstance(value, PSDictBase) else PSDict
                 value = dict_type(raw_values)
@@ -805,12 +836,12 @@ class _Serializer:
                 for queue_entry in obj_entry:
                     value.put(self.deserialize(queue_entry))
 
-            elif obj_entry.tag in [PSListBase.PSObject.tag, 'IE']:  # IE isn't used by us but the docs refer to it.
+            elif obj_entry.tag in [PSListBase.PSObject.tag, "IE"]:  # IE isn't used by us but the docs refer to it.
                 raw_values = [self.deserialize(list_entry) for list_entry in obj_entry]
                 list_type = type(value) if isinstance(value, PSListBase) else PSList
                 value = list_type(raw_values)
 
-            elif obj_entry.tag not in ['TN', 'TNRef']:
+            elif obj_entry.tag not in ["TN", "TNRef"]:
                 # Extended primitive types and enums store the value as a sub element of the Obj.
                 new_value = self.deserialize(obj_entry)
 
@@ -838,18 +869,18 @@ class _Serializer:
                 scratch_obj = PSCustomObject()
                 scratch_obj.PSObject.extended_properties = getattr(value.PSObject, prop_group_name)
                 for obj_property in prop_xml:
-                    prop_name = _deserialize_string(obj_property.attrib['N'])
+                    prop_name = _deserialize_string(obj_property.attrib["N"])
                     prop_value = self.deserialize(obj_property)
                     add_note_property(scratch_obj, prop_name, prop_value, force=True)
 
-        ref_id = element.attrib.get('RefId', None)
+        ref_id = element.attrib.get("RefId", None)
         if ref_id is not None:
             self._obj_ref_map[ref_id] = value
 
         # Final override that allows classes to transform the raw CLIXML deserialized object to something more human
         # friendly.
         value_type = type(value)
-        if hasattr(value_type, 'FromPSObjectForRemoting'):
+        if hasattr(value_type, "FromPSObjectForRemoting"):
             value = value_type.FromPSObjectForRemoting(value)
 
         return value

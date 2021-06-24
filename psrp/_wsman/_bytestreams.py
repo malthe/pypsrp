@@ -75,9 +75,7 @@ class AsyncIteratorByteStream(AsyncByteStream):
     ```
     """
 
-    def __init__(
-        self, aiterator: AsyncIterator[bytes], aclose_func: Callable = None
-    ) -> None:
+    def __init__(self, aiterator: AsyncIterator[bytes], aclose_func: Callable = None) -> None:
         self._aiterator = aiterator
         self._aclose_func = aclose_func
 

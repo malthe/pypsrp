@@ -30,7 +30,8 @@ from .ps_base import (
 )
 
 # Used by PSVersion to validate the string input. Must be int.int with an optional 3rd and 4th integer values.
-_VERSION_PATTERN = re.compile(r'''
+_VERSION_PATTERN = re.compile(
+    r"""
 ^
 (?P<major>0|[1-9]\d*)               # The major version, can only have a leading 0 if that's the only value.
 \.
@@ -42,13 +43,15 @@ _VERSION_PATTERN = re.compile(r'''
     )?
 )?                                  # The 3rd and 4th versions are optional, we just require major.minor.
 $
-''', re.VERBOSE)
+""",
+    re.VERBOSE,
+)
 
 
 def _ensure_types_and_self(
-        valid_types: typing.Union[type, typing.List[type]],
+    valid_types: typing.Union[type, typing.List[type]],
 ):
-    """ Decorator that validates the first and only argument is either the current instance or the supplied types. """
+    """Decorator that validates the first and only argument is either the current instance or the supplied types."""
     if not isinstance(valid_types, list):
         valid_types = [valid_types]
 
@@ -66,7 +69,7 @@ def _ensure_types_and_self(
 
 
 def _timedelta_total_nanoseconds(
-        timedelta: typing.Union['PSDuration', datetime.timedelta],
+    timedelta: typing.Union["PSDuration", datetime.timedelta],
 ) -> int:
     """Get the duration in nanoseconds of a timedelta object.
 
@@ -85,7 +88,7 @@ def _timedelta_total_nanoseconds(
         int: The total number of nanoseconds the timedelta represents.
     """
     # nanoseconds are an extra attribute added by PSDuration but not present in datetime.timedelta
-    nanoseconds = getattr(timedelta, 'nanoseconds', 0)
+    nanoseconds = getattr(timedelta, "nanoseconds", 0)
     nanoseconds += timedelta.microseconds * 1000
     nanoseconds += timedelta.seconds * 1000000000
     nanoseconds += timedelta.days * 86400000000000
@@ -94,7 +97,6 @@ def _timedelta_total_nanoseconds(
 
 
 class _PSStringBase(PSObject, str):
-
     def __init__(self, *args, **kwargs):
         super().__init__()
 
@@ -127,7 +129,8 @@ class PSString(_PSStringBase):
     .. _System.String:
         https://docs.microsoft.com/en-us/dotnet/api/system.string?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.String', 'System.Object'], tag='S')
+
+    PSObject = PSObjectMeta(["System.String", "System.Object"], tag="S")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -171,19 +174,20 @@ class PSChar(PSObject, int):
     .. _System.Char:
         https://docs.microsoft.com/en-us/dotnet/api/system.char?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Char', 'System.ValueType', 'System.Object'], tag='C')
+
+    PSObject = PSObjectMeta(["System.Char", "System.ValueType", "System.Object"], tag="C")
 
     def __new__(cls, *args, **kwargs):
         raw_args = list(args)
 
         if isinstance(raw_args[0], bytes):
-            raw_args[0] = raw_args[0].decode('utf-8')
+            raw_args[0] = raw_args[0].decode("utf-8")
 
         if isinstance(raw_args[0], str):
             # Ensure we are dealing with a UTF-8 string before converting to UTF-16
-            b_value = raw_args[0].encode('utf-16-le')
+            b_value = raw_args[0].encode("utf-16-le")
             if len(b_value) > 2:
-                raise ValueError('A PSChar must be 1 UTF-16 codepoint.')
+                raise ValueError("A PSChar must be 1 UTF-16 codepoint.")
 
             raw_args[0] = struct.unpack("<H", b_value)[0]
 
@@ -250,7 +254,8 @@ class PSDateTime(PSObject, datetime.datetime):
     .. _System.DateTime:
         https://docs.microsoft.com/en-us/dotnet/api/system.datetime?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.DateTime', 'System.ValueType', 'System.Object'], tag='DT')
+
+    PSObject = PSObjectMeta(["System.DateTime", "System.ValueType", "System.Object"], tag="DT")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -260,13 +265,23 @@ class PSDateTime(PSObject, datetime.datetime):
 
     def __new__(cls, *args, **kwargs):
         nanosecond = 0
-        if 'nanosecond' in kwargs:
-            nanosecond = kwargs.pop('nanosecond')
+        if "nanosecond" in kwargs:
+            nanosecond = kwargs.pop("nanosecond")
 
         if args and isinstance(args[0], datetime.datetime):
             dt = args[0]
-            instance = super().__new__(cls, dt.year, dt.month, dt.day, hour=dt.hour, minute=dt.minute,
-                                       second=dt.second, microsecond=dt.microsecond, tzinfo=dt.tzinfo, fold=dt.fold)
+            instance = super().__new__(
+                cls,
+                dt.year,
+                dt.month,
+                dt.day,
+                hour=dt.hour,
+                minute=dt.minute,
+                second=dt.second,
+                microsecond=dt.microsecond,
+                tzinfo=dt.tzinfo,
+                fold=dt.fold,
+            )
 
         else:
             instance = super().__new__(cls, *args, **kwargs)
@@ -276,35 +291,35 @@ class PSDateTime(PSObject, datetime.datetime):
 
     def __repr__(self) -> str:
         datetime_repr = super().__repr__()[:-1]
-        return f'{datetime_repr}, nanosecond={self.nanosecond})'
+        return f"{datetime_repr}, nanosecond={self.nanosecond})"
 
     def __str__(self) -> str:
-        date = f'{self.year:04d}-{self.month:02d}-{self.day:02d}'
+        date = f"{self.year:04d}-{self.month:02d}-{self.day:02d}"
 
-        time = f'{self.hour:02d}:{self.minute:02d}:{self.second:02d}'
+        time = f"{self.hour:02d}:{self.minute:02d}:{self.second:02d}"
         if self.microsecond or self.nanosecond:
-            nanosecond = f'{self.nanosecond:03d}' if self.nanosecond else ''
-            microsecond = f'{self.microsecond:06d}'
-            time += f'.{microsecond}{nanosecond}'
+            nanosecond = f"{self.nanosecond:03d}" if self.nanosecond else ""
+            microsecond = f"{self.microsecond:06d}"
+            time += f".{microsecond}{nanosecond}"
 
-        offset = ''
+        offset = ""
         off = self.utcoffset()
         if off is not None:
-            plus_or_minus = '+' if off.days >= 0 else '-'
+            plus_or_minus = "+" if off.days >= 0 else "-"
             off = abs(off)
             hours, minutes = divmod(off, datetime.timedelta(hours=1))
             minutes, seconds = divmod(minutes, datetime.timedelta(minutes=1))
 
             # While Python does support tz with an offset of less than minutes, .NET does not.
-            offset = f'{plus_or_minus}{hours:02d}:{minutes:02d}'
+            offset = f"{plus_or_minus}{hours:02d}:{minutes:02d}"
 
-        return f'{date} {time}{offset}'
+        return f"{date} {time}{offset}"
 
     def __add__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
-    ) -> 'PSDateTime':
-        nanosecond_diff = self.nanosecond + getattr(other, 'nanoseconds', 0)
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
+    ) -> "PSDateTime":
+        nanosecond_diff = self.nanosecond + getattr(other, "nanoseconds", 0)
         new_date = PSDateTime(super().__add__(other))
 
         # If the nanoseconds exceed 1000 we need to add the microseconds to our new date before setting the nanosecond
@@ -318,14 +333,14 @@ class PSDateTime(PSObject, datetime.datetime):
         return new_date
 
     def __sub__(
-            self,
-            other: typing.Union['PSDateTime', 'PSDuration', datetime.datetime, datetime.timedelta],
-    ) -> typing.Union['PSDateTime', 'PSDuration']:
+        self,
+        other: typing.Union["PSDateTime", "PSDuration", datetime.datetime, datetime.timedelta],
+    ) -> typing.Union["PSDateTime", "PSDuration"]:
         if isinstance(other, (PSDuration, datetime.timedelta)):
             return self + -other
 
         duration = PSDuration(super().__sub__(other))
-        nanosecond_diff = self.nanosecond - getattr(other, 'nanosecond', 0)
+        nanosecond_diff = self.nanosecond - getattr(other, "nanosecond", 0)
         return duration + PSDuration(nanoseconds=nanosecond_diff)
 
 
@@ -353,7 +368,8 @@ class PSDuration(PSObject, datetime.timedelta):
     .. _System.TimeSpan:
         https://docs.microsoft.com/en-us/dotnet/api/system.timespan?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.TimeSpan', 'System.ValueType', 'System.Object'], tag='TS')
+
+    PSObject = PSObjectMeta(["System.TimeSpan", "System.ValueType", "System.Object"], tag="TS")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -362,8 +378,8 @@ class PSDuration(PSObject, datetime.timedelta):
 
     def __new__(cls, *args, **kwargs):
         nanoseconds = 0
-        if 'nanoseconds' in kwargs:
-            nanoseconds = kwargs.pop('nanoseconds')
+        if "nanoseconds" in kwargs:
+            nanoseconds = kwargs.pop("nanoseconds")
 
         # Need to get the total seconds and microseconds and add our custom nanoseconds to the amount before we create
         # the final duration object.
@@ -383,103 +399,103 @@ class PSDuration(PSObject, datetime.timedelta):
 
     def __repr__(self):
         values = []
-        for field in ['days', 'seconds', 'microseconds', 'nanoseconds']:
+        for field in ["days", "seconds", "microseconds", "nanoseconds"]:
             value = getattr(self, field, None)
             if value:
-                values.append(f'{field}={value}')
+                values.append(f"{field}={value}")
 
         if not values:
-            values.append('0')
+            values.append("0")
 
-        kwargs = ', '.join(values)
+        kwargs = ", ".join(values)
         cls = self.__class__
-        return f'{cls.__qualname__}({kwargs})'
+        return f"{cls.__qualname__}({kwargs})"
 
     def __str__(self):
-        s = ''
+        s = ""
         if self.days:
-            plural = 's' if abs(self.days) != 1 else ''
-            s = f'{self.days} day{plural}, '
+            plural = "s" if abs(self.days) != 1 else ""
+            s = f"{self.days} day{plural}, "
 
         minutes, seconds = divmod(self.seconds, 60)
         hours, minutes = divmod(minutes, 60)
-        s += f'{hours}:{minutes:02d}:{seconds:02d}'
+        s += f"{hours}:{minutes:02d}:{seconds:02d}"
 
         if self.microseconds or self.nanoseconds:
-            nanoseconds = f'{self.nanoseconds:03d}' if self.nanoseconds else ''
-            microseconds = f'{self.microseconds:06d}'
-            s += f'.{microseconds}{nanoseconds}'
+            nanoseconds = f"{self.nanoseconds:03d}" if self.nanoseconds else ""
+            microseconds = f"{self.microseconds:06d}"
+            s += f".{microseconds}{nanoseconds}"
 
         return s
 
     @_ensure_types_and_self(datetime.timedelta)
     def __add__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
-    ) -> 'PSDuration':
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
+    ) -> "PSDuration":
         new_nano = _timedelta_total_nanoseconds(self) + _timedelta_total_nanoseconds(other)
         return PSDuration(nanoseconds=new_nano)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __sub__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
-    ) -> 'PSDuration':
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
+    ) -> "PSDuration":
         new_nano = _timedelta_total_nanoseconds(self) - _timedelta_total_nanoseconds(other)
         return PSDuration(nanoseconds=new_nano)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __rsub__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
-    ) -> 'PSDuration':
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
+    ) -> "PSDuration":
         return -self + other
 
-    def __neg__(self) -> 'PSDuration':
+    def __neg__(self) -> "PSDuration":
         return PSDuration(nanoseconds=-(_timedelta_total_nanoseconds(self)))
 
-    def __pos__(self) -> 'PSDuration':
+    def __pos__(self) -> "PSDuration":
         return self
 
     @_ensure_types_and_self(datetime.timedelta)
     def __eq__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
     ) -> bool:
         return _timedelta_total_nanoseconds(self) == _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __ne__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
     ) -> bool:
         return _timedelta_total_nanoseconds(self) != _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __le__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
     ) -> bool:
         return _timedelta_total_nanoseconds(self) <= _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __lt__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
     ) -> bool:
         return _timedelta_total_nanoseconds(self) < _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __ge__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
     ) -> bool:
         return _timedelta_total_nanoseconds(self) >= _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __gt__(
-            self,
-            other: typing.Union['PSDuration', datetime.timedelta],
+        self,
+        other: typing.Union["PSDuration", datetime.timedelta],
     ) -> bool:
         return _timedelta_total_nanoseconds(self) > _timedelta_total_nanoseconds(other)
 
@@ -516,7 +532,8 @@ class PSByte(PSIntegerBase):
     .. _System.Byte:
         https://docs.microsoft.com/en-us/dotnet/api/system.byte?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Byte', 'System.ValueType', 'System.Object'], tag='By')
+
+    PSObject = PSObjectMeta(["System.Byte", "System.ValueType", "System.Object"], tag="By")
 
     MinValue = 0
     MaxValue = 255
@@ -545,7 +562,8 @@ class PSSByte(PSIntegerBase):
     .. _System.SByte:
         https://docs.microsoft.com/en-us/dotnet/api/system.sbyte?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.SByte', 'System.ValueType', 'System.Object'], tag='SB')
+
+    PSObject = PSObjectMeta(["System.SByte", "System.ValueType", "System.Object"], tag="SB")
 
     MinValue = -128
     MaxValue = 127
@@ -574,7 +592,8 @@ class PSUInt16(PSIntegerBase):
     .. _System.UInt16:
         https://docs.microsoft.com/en-us/dotnet/api/system.uint16?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.UInt16', 'System.ValueType', 'System.Object'], tag='U16')
+
+    PSObject = PSObjectMeta(["System.UInt16", "System.ValueType", "System.Object"], tag="U16")
 
     MinValue = 0
     MaxValue = 65535
@@ -603,7 +622,8 @@ class PSInt16(PSIntegerBase):
     .. _System.Int16:
         https://docs.microsoft.com/en-us/dotnet/api/system.int16?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Int16', 'System.ValueType', 'System.Object'], tag='I16')
+
+    PSObject = PSObjectMeta(["System.Int16", "System.ValueType", "System.Object"], tag="I16")
 
     MinValue = -32768
     MaxValue = 32767
@@ -632,7 +652,8 @@ class PSUInt(PSIntegerBase):
     .. _System.UInt32:
         https://docs.microsoft.com/en-us/dotnet/api/system.uint32?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.UInt32', 'System.ValueType', 'System.Object'], tag='U32')
+
+    PSObject = PSObjectMeta(["System.UInt32", "System.ValueType", "System.Object"], tag="U32")
 
     MinValue = 0
     MaxValue = 4294967295
@@ -660,7 +681,8 @@ class PSInt(PSIntegerBase):
     .. _System.Int32:
         https://docs.microsoft.com/en-us/dotnet/api/system.int32?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Int32', 'System.ValueType', 'System.Object'], tag='I32')
+
+    PSObject = PSObjectMeta(["System.Int32", "System.ValueType", "System.Object"], tag="I32")
 
     MinValue = -2147483648
     MaxValue = 2147483647
@@ -689,7 +711,8 @@ class PSUInt64(PSIntegerBase):
     .. _System.UInt64:
         https://docs.microsoft.com/en-us/dotnet/api/system.uint64?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.UInt64', 'System.ValueType', 'System.Object'], tag='U64')
+
+    PSObject = PSObjectMeta(["System.UInt64", "System.ValueType", "System.Object"], tag="U64")
 
     MinValue = 0
     MaxValue = 18446744073709551615
@@ -718,7 +741,8 @@ class PSInt64(PSIntegerBase):
     .. _System.Int64:
         https://docs.microsoft.com/en-us/dotnet/api/system.int64?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Int64', 'System.ValueType', 'System.Object'], tag='I64')
+
+    PSObject = PSObjectMeta(["System.Int64", "System.ValueType", "System.Object"], tag="I64")
 
     MinValue = -9223372036854775808
     MaxValue = 9223372036854775807
@@ -743,7 +767,8 @@ class PSSingle(PSObject, float):
     .. _System.Single:
         https://docs.microsoft.com/en-us/dotnet/api/system.single?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Single', 'System.ValueType', 'System.Object'], tag='Sg')
+
+    PSObject = PSObjectMeta(["System.Single", "System.ValueType", "System.Object"], tag="Sg")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -768,7 +793,8 @@ class PSDouble(PSObject, float):
     .. _System.Double:
         https://docs.microsoft.com/en-us/dotnet/api/system.double?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Double', 'System.ValueType', 'System.Object'], tag='Db')
+
+    PSObject = PSObjectMeta(["System.Double", "System.ValueType", "System.Object"], tag="Db")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -793,7 +819,8 @@ class PSDecimal(PSObject, decimal.Decimal):
     .. _System.Decimal:
         https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Decimal', 'System.ValueType', 'System.Object'], tag='D')
+
+    PSObject = PSObjectMeta(["System.Decimal", "System.ValueType", "System.Object"], tag="D")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -815,7 +842,8 @@ class PSByteArray(PSObject, bytes):
     .. _[MS-PSRP] 2.2.5.1.17 Array of Bytes:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/489ed886-34d2-4306-a2f5-73843c219b14
     """
-    PSObject = PSObjectMeta(['System.Byte[]', 'System.Array', 'System.Object'], tag='BA')
+
+    PSObject = PSObjectMeta(["System.Byte[]", "System.Array", "System.Object"], tag="BA")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -849,7 +877,8 @@ class PSGuid(PSObject, uuid.UUID):
     .. _System.Guid:
         https://docs.microsoft.com/en-us/dotnet/api/system.guid?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Guid', 'System.ValueType', 'System.Object'], tag='G')
+
+    PSObject = PSObjectMeta(["System.Guid", "System.ValueType", "System.Object"], tag="G")
 
     def __new__(cls, *args, **kwargs):
         return super().__new__(cls)
@@ -860,10 +889,10 @@ class PSGuid(PSObject, uuid.UUID):
 
     def __setattr__(self, name, value):
         # UUID raises TypeError on __setattr__ and there are cases where we need to override the psobject attribute.
-        if name == 'PSObject':
+        if name == "PSObject":
             # Because PSObject returns a copy when requesting a __dict__ we need to go a step further to ensure we can
             # manipulate the actual __dict__ for this object.
-            object.__getattribute__(self, '__dict__')['PSObject'] = value
+            object.__getattribute__(self, "__dict__")["PSObject"] = value
             return
 
         super().__setattr__(name, value)
@@ -892,7 +921,8 @@ class PSUri(_PSStringBase):
     .. _System.Uri:
         https://docs.microsoft.com/en-us/dotnet/api/system.uri?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Uri', 'System.Object'], tag='URI')
+
+    PSObject = PSObjectMeta(["System.Uri", "System.Object"], tag="URI")
 
 
 PSNull = None
@@ -956,36 +986,40 @@ class PSVersion(PSObject):
     .. _System.Version:
         https://docs.microsoft.com/en-us/dotnet/api/system.version?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Version', 'System.Object'], tag='Version')
+
+    PSObject = PSObjectMeta(["System.Version", "System.Object"], tag="Version")
 
     def __init__(
-            self,
-            version_str: typing.Optional[str] = None,
-            major: typing.Optional[int] = None,
-            minor: typing.Optional[int] = None,
-            build: typing.Optional[int] = None,
-            revision: typing.Optional[int] = None,
+        self,
+        version_str: typing.Optional[str] = None,
+        major: typing.Optional[int] = None,
+        minor: typing.Optional[int] = None,
+        build: typing.Optional[int] = None,
+        revision: typing.Optional[int] = None,
     ):
         super().__init__()
 
         if version_str:
             version_match = _VERSION_PATTERN.match(version_str)
             if not version_match:
-                raise ValueError(f"Invalid PSVersion string '{version_str}': must be 2 to 4 groups of numbers that "
-                                 f"are separated by '.'")
+                raise ValueError(
+                    f"Invalid PSVersion string '{version_str}': must be 2 to 4 groups of numbers that "
+                    f"are separated by '.'"
+                )
 
             matches = version_match.groupdict()
-            major = matches['major']
-            minor = matches['minor']
-            build = matches['build']
-            revision = matches['revision']
+            major = matches["major"]
+            minor = matches["minor"]
+            build = matches["build"]
+            revision = matches["revision"]
 
         elif major is None or minor is None:
-            raise ValueError(f'The major and minor versions must be specified when creating a '
-                             f'{self.__class__.__qualname__}')
+            raise ValueError(
+                f"The major and minor versions must be specified when creating a " f"{self.__class__.__qualname__}"
+            )
 
         elif revision is not None and build is None:
-            raise ValueError(f'The build version must be set when revision is set.')
+            raise ValueError(f"The build version must be set when revision is set.")
 
         self.major = int(major)
         self.minor = int(minor)
@@ -997,64 +1031,65 @@ class PSVersion(PSObject):
 
     def __repr__(self) -> str:
         values = []
-        for field in ['major', 'minor', 'build', 'revision']:
+        for field in ["major", "minor", "build", "revision"]:
             value = getattr(self, field, None)
             if value is not None:
-                values.append(f'{field}={value}')
+                values.append(f"{field}={value}")
 
-        kwargs = ', '.join(values)
+        kwargs = ", ".join(values)
         cls = self.__class__
-        return f'{cls.__module__}.{cls.__qualname__}({kwargs})'
+        return f"{cls.__module__}.{cls.__qualname__}({kwargs})"
 
     def __str__(self) -> str:
         parts = [self.major, self.minor, self.build, self.revision]
-        return '.'.join([str(p) for p in parts if p is not None])
+        return ".".join([str(p) for p in parts if p is not None])
 
     def __eq__(
-            self,
-            other: typing.Union['PSVersion', str],
+        self,
+        other: typing.Union["PSVersion", str],
     ) -> bool:
         if not isinstance(other, (PSVersion, str)):
             return False
 
-        return self._cmp(other, operator.eq, '==')
+        return self._cmp(other, operator.eq, "==")
 
     def __ge__(
-            self,
-            other: typing.Union['PSVersion', str],
+        self,
+        other: typing.Union["PSVersion", str],
     ) -> bool:
-        return self._cmp(other, operator.ge, '>=')
+        return self._cmp(other, operator.ge, ">=")
 
     def __gt__(
-            self,
-            other: typing.Union['PSVersion', str],
+        self,
+        other: typing.Union["PSVersion", str],
     ) -> bool:
-        return self._cmp(other, operator.gt, '>')
+        return self._cmp(other, operator.gt, ">")
 
     def __le__(
-            self,
-            other: typing.Union['PSVersion', str],
+        self,
+        other: typing.Union["PSVersion", str],
     ) -> bool:
-        return self._cmp(other, operator.le, '<=')
+        return self._cmp(other, operator.le, "<=")
 
     def __lt__(
-            self,
-            other: typing.Union['PSVersion', str],
+        self,
+        other: typing.Union["PSVersion", str],
     ) -> bool:
-        return self._cmp(other, operator.lt, '<')
+        return self._cmp(other, operator.lt, "<")
 
     def _cmp(
-            self,
-            other: typing.Union['PSVersion', str],
-            cmp: typing.Callable[[typing.Tuple[int, ...], typing.Tuple[int, ...]], bool],
-            op_symbol: str,
+        self,
+        other: typing.Union["PSVersion", str],
+        cmp: typing.Callable[[typing.Tuple[int, ...], typing.Tuple[int, ...]], bool],
+        op_symbol: str,
     ) -> bool:
         if isinstance(other, str):
             other = PSVersion(version_str=other)
 
         if not isinstance(other, PSVersion):
-            raise TypeError(f"'{op_symbol}' not supported between instances of 'PSVersion' and "
-                            f"'{type(other).__name__}")
+            raise TypeError(
+                f"'{op_symbol}' not supported between instances of 'PSVersion' and " f"'{type(other).__name__}"
+            )
 
         def version_tuple(version):
             parts = [version.major, version.minor, version.build, version.revision]
@@ -1090,7 +1125,8 @@ class PSXml(_PSStringBase):
     .. _System.Xml.XmlDocument:
         https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Xml.XmlDocument', 'System.Xml.XmlNode', 'System.Object'], tag='XD')
+
+    PSObject = PSObjectMeta(["System.Xml.XmlDocument", "System.Xml.XmlNode", "System.Object"], tag="XD")
 
 
 class PSScriptBlock(_PSStringBase):
@@ -1118,7 +1154,8 @@ class PSScriptBlock(_PSStringBase):
     .. _System.Management.Automation.ScriptBlock:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scriptblock?view=powershellsdk-7.0.0
     """
-    PSObject = PSObjectMeta(['System.Management.Automation.ScriptBlock', 'System.Object'], tag='SBK')
+
+    PSObject = PSObjectMeta(["System.Management.Automation.ScriptBlock", "System.Object"], tag="SBK")
 
 
 class PSSecureString(_PSStringBase):
@@ -1152,4 +1189,5 @@ class PSSecureString(_PSStringBase):
     .. _System.Security.SecureString:
         https://docs.microsoft.com/en-us/dotnet/api/system.security.securestring?view=net-5.0
     """
-    PSObject = PSObjectMeta(['System.Security.SecureString', 'System.Object'], tag='SS')
+
+    PSObject = PSObjectMeta(["System.Security.SecureString", "System.Object"], tag="SS")

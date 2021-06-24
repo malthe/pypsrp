@@ -87,9 +87,7 @@ class AsyncHTTPConnection:
         async with self.request_lock:
             if self.state == ConnectionState.PENDING:
                 if not self.socket:
-                    logger.trace(
-                        "open_socket origin=%r timeout=%r", self.origin, timeout
-                    )
+                    logger.trace("open_socket origin=%r timeout=%r", self.origin, timeout)
                     self.socket = await self._open_socket(timeout)
                 self._create_connection(self.socket)
             elif self.state in (ConnectionState.READY, ConnectionState.IDLE):
@@ -100,9 +98,7 @@ class AsyncHTTPConnection:
                 raise NewConnectionRequired()
 
         assert self.connection is not None
-        logger.trace(
-            "connection.arequest method=%r url=%r headers=%r", method, url, headers
-        )
+        logger.trace("connection.arequest method=%r url=%r headers=%r", method, url, headers)
         return await self.connection.arequest(method, url, headers, stream, ext)
 
     async def _open_socket(self, timeout: TimeoutDict = None) -> AsyncSocketStream:
@@ -135,21 +131,15 @@ class AsyncHTTPConnection:
 
     def _create_connection(self, socket: AsyncSocketStream) -> None:
         http_version = socket.get_http_version()
-        logger.trace(
-            "create_connection socket=%r http_version=%r", socket, http_version
-        )
+        logger.trace("create_connection socket=%r http_version=%r", socket, http_version)
         if http_version == "HTTP/2":
             from .http2 import AsyncHTTP2Connection
 
             self.is_http2 = True
-            self.connection = AsyncHTTP2Connection(
-                socket=socket, backend=self.backend, ssl_context=self.ssl_context
-            )
+            self.connection = AsyncHTTP2Connection(socket=socket, backend=self.backend, ssl_context=self.ssl_context)
         else:
             self.is_http11 = True
-            self.connection = AsyncHTTP11Connection(
-                socket=socket, ssl_context=self.ssl_context
-            )
+            self.connection = AsyncHTTP11Connection(socket=socket, ssl_context=self.ssl_context)
 
     @property
     def state(self) -> ConnectionState:

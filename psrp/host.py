@@ -40,14 +40,13 @@ from .dotnet.psrp_messages import (
     ProgressRecord,
 )
 
-MethodMetadata = collections.namedtuple('MethodMetadata', ['is_void', 'invoke'])
+MethodMetadata = collections.namedtuple("MethodMetadata", ["is_void", "invoke"])
 
 
 class PSHost:
-
     def __init__(
-            self,
-            ui: typing.Optional['PSHostUI'] = None,
+        self,
+        ui: typing.Optional["PSHostUI"] = None,
     ):
         self.ui = ui
 
@@ -136,8 +135,8 @@ class PSHost:
         raise NotImplementedError()
 
     def set_should_exit(
-            self,
-            exit_code: PSInt,
+        self,
+        exit_code: PSInt,
     ):
         """Set should exit.
 
@@ -174,8 +173,8 @@ class PSHost:
         raise NotImplementedError()
 
     def push_runspace(
-            self,
-            runspace: PSObject,
+        self,
+        runspace: PSObject,
     ):
         raise NotImplementedError()
 
@@ -190,10 +189,9 @@ class PSHost:
 
 
 class PSHostUI:
-
     def __init__(
-            self,
-            raw_ui: typing.Optional['PSHostRawUI'] = None,
+        self,
+        raw_ui: typing.Optional["PSHostRawUI"] = None,
     ):
         self.raw_ui = raw_ui
 
@@ -204,16 +202,16 @@ class PSHostUI:
         raise NotImplementedError()
 
     def write1(
-            self,
-            message: PSString,
+        self,
+        message: PSString,
     ):
         raise NotImplementedError()
 
     def write2(
-            self,
-            foreground_color: ConsoleColor,
-            background_color: ConsoleColor,
-            message: PSString,
+        self,
+        foreground_color: ConsoleColor,
+        background_color: ConsoleColor,
+        message: PSString,
     ):
         raise NotImplementedError()
 
@@ -221,99 +219,98 @@ class PSHostUI:
         raise NotImplementedError()
 
     def write_line2(
-            self,
-            message: PSString,
+        self,
+        message: PSString,
     ):
         raise NotImplementedError()
 
     def write_line3(
-            self,
-            foreground_color: ConsoleColor,
-            background_color: ConsoleColor,
-            message: PSString,
+        self,
+        foreground_color: ConsoleColor,
+        background_color: ConsoleColor,
+        message: PSString,
     ):
         raise NotImplementedError()
 
     def write_error_line(
-            self,
-            message: PSString,
+        self,
+        message: PSString,
     ):
         raise NotImplementedError()
 
     def write_debug_line(
-            self,
-            message: PSString,
+        self,
+        message: PSString,
     ):
         raise NotImplementedError()
 
     def write_progress(
-            self,
-            source_id: PSInt64,
-            record: ProgressRecord,
+        self,
+        source_id: PSInt64,
+        record: ProgressRecord,
     ):
         raise NotImplementedError()
 
     def write_verbose_line(
-            self,
-            message: PSString,
+        self,
+        message: PSString,
     ):
         raise NotImplementedError()
 
     def write_warning_line(
-            self,
-            message: PSString,
+        self,
+        message: PSString,
     ):
         raise NotImplementedError()
 
     def prompt(
-            self,
-            caption: PSString,
-            message: PSString,
-            descriptions: PSGenericList[PSRPFieldDescription],
+        self,
+        caption: PSString,
+        message: PSString,
+        descriptions: PSGenericList[PSRPFieldDescription],
     ) -> PSDict:
         raise NotImplementedError()
 
     def prompt_for_credential(
-            self,
-            caption: PSString,
-            message: PSString,
-            user_name: PSString,
-            target_name: PSString,
+        self,
+        caption: PSString,
+        message: PSString,
+        user_name: PSString,
+        target_name: PSString,
     ) -> PSCredential:
         raise NotImplementedError()
 
     def prompt_for_credential2(
-            self,
-            caption: PSString,
-            message: PSString,
-            user_name: PSString,
-            target_name: PSString,
-            allowed_credential_types: PSCredentialTypes,
-            options: PSCredentialUIOptions,
+        self,
+        caption: PSString,
+        message: PSString,
+        user_name: PSString,
+        target_name: PSString,
+        allowed_credential_types: PSCredentialTypes,
+        options: PSCredentialUIOptions,
     ) -> PSCredential:
         raise NotImplementedError()
 
     def prompt_for_choice(
-            self,
-            caption: PSString,
-            message: PSString,
-            choices: PSGenericList[PSRPChoiceDescription],
-            default_choice: PSInt,
+        self,
+        caption: PSString,
+        message: PSString,
+        choices: PSGenericList[PSRPChoiceDescription],
+        default_choice: PSInt,
     ) -> PSInt:
         raise NotImplementedError()
 
     def prompt_for_choice_multiple_selection(
-            self,
-            caption: PSString,
-            message: PSString,
-            choices: PSGenericList[PSRPChoiceDescription],
-            choice_choices: PSGenericList[PSInt],
+        self,
+        caption: PSString,
+        message: PSString,
+        choices: PSGenericList[PSRPChoiceDescription],
+        choice_choices: PSGenericList[PSInt],
     ) -> PSGenericList[PSInt]:
         raise NotImplementedError()
 
 
 class PSHostRawUI:
-
     def get_host_default_data(self) -> HostDefaultData:
         """Get the PSRP HostDefaultData.
 
@@ -340,8 +337,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_foreground_color(
-            self,
-            value: ConsoleColor,
+        self,
+        value: ConsoleColor,
     ):
         raise NotImplementedError()
 
@@ -349,8 +346,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_background_color(
-            self,
-            value: ConsoleColor,
+        self,
+        value: ConsoleColor,
     ):
         raise NotImplementedError()
 
@@ -358,8 +355,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_cursor_position(
-            self,
-            value: Coordinates,
+        self,
+        value: Coordinates,
     ):
         raise NotImplementedError()
 
@@ -367,8 +364,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_window_position(
-            self,
-            value: Coordinates,
+        self,
+        value: Coordinates,
     ):
         raise NotImplementedError()
 
@@ -376,8 +373,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_cursor_size(
-            self,
-            value: PSInt,
+        self,
+        value: PSInt,
     ):
         raise NotImplementedError()
 
@@ -385,8 +382,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_buffer_size(
-            self,
-            value: Size,
+        self,
+        value: Size,
     ):
         raise NotImplementedError()
 
@@ -394,8 +391,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_window_size(
-            self,
-            value: Size,
+        self,
+        value: Size,
     ):
         raise NotImplementedError()
 
@@ -403,8 +400,8 @@ class PSHostRawUI:
         raise NotImplementedError()
 
     def set_window_title(
-            self,
-            value: PSString,
+        self,
+        value: PSString,
     ):
         raise NotImplementedError()
 
@@ -437,9 +434,9 @@ class PSHostRawUI:
 
 
 def get_host_method(
-        host: PSHost,
-        method_identifier: HostMethodIdentifier,
-        method_parameters: typing.List,
+    host: PSHost,
+    method_identifier: HostMethodIdentifier,
+    method_parameters: typing.List,
 ) -> MethodMetadata:
     """Get a callable host method.
 
@@ -456,75 +453,72 @@ def get_host_method(
         on the host or a function to invoke that executes the remote host call.
     """
     name, is_void, host_type = {
-        HostMethodIdentifier.GetName: ('get_name', False, 'host'),
-        HostMethodIdentifier.GetVersion: ('get_version', False, 'host'),
-        HostMethodIdentifier.GetInstanceId: ('get_instance_id', False, 'host'),
-        HostMethodIdentifier.GetCurrentCulture: ('get_current_culture', False, 'host'),
-        HostMethodIdentifier.GetCurrentUICulture: ('get_current_ui_culture', False, 'host'),
-        HostMethodIdentifier.SetShouldExit: ('set_should_exit', True, 'host'),
-        HostMethodIdentifier.EnterNestedPrompt: ('enter_nested_prompt', True, 'host'),
-        HostMethodIdentifier.ExitNestedPrompt: ('exit_nested_prompt', True, 'host'),
-        HostMethodIdentifier.NotifyBeginApplication: ('notify_begin_application', True, 'host'),
-        HostMethodIdentifier.NotifyEndApplication: ('notify_end_application', True, 'host'),
-        HostMethodIdentifier.PushRunspace: ('push_runspace', True, 'host'),
-        HostMethodIdentifier.PopRunspace: ('pop_runspace', True, 'host'),
-        HostMethodIdentifier.GetIsRunspacePushed: ('get_is_runspace_pushed', False, 'host'),
-        HostMethodIdentifier.GetRunspace: ('get_runspace', False, 'host'),
-
-        HostMethodIdentifier.ReadLine: ('read_line', False, 'ui'),
-        HostMethodIdentifier.ReadLineAsSecureString: ('read_line_as_secure_string', False, 'ui'),
-        HostMethodIdentifier.Write1: ('write1', True, 'ui'),
-        HostMethodIdentifier.Write2: ('write2', True, 'ui'),
-        HostMethodIdentifier.WriteLine1: ('write_line1', True, 'ui'),
-        HostMethodIdentifier.WriteLine2: ('write_line2', True, 'ui'),
-        HostMethodIdentifier.WriteLine3: ('write_line3', True, 'ui'),
-        HostMethodIdentifier.WriteErrorLine: ('write_error_line', True, 'ui'),
-        HostMethodIdentifier.WriteDebugLine: ('write_debug_line', True, 'ui'),
-        HostMethodIdentifier.WriteProgress: ('write_progress', True, 'ui'),
-        HostMethodIdentifier.WriteVerboseLine: ('write_verbose_line', True, 'ui'),
-        HostMethodIdentifier.WriteWarningLine: ('write_warning_line', True, 'ui'),
-        HostMethodIdentifier.Prompt: ('prompt', False, 'ui'),
-        HostMethodIdentifier.PromptForCredential1: ('prompt_for_credential1', False, 'ui'),
-        HostMethodIdentifier.PromptForCredential2: ('prompt_for_credential2', False, 'ui'),
-        HostMethodIdentifier.PromptForChoice: ('prompt_for_choice', False, 'ui'),
-        HostMethodIdentifier.PromptForChoiceMultipleSelection: ('prompt_for_choice_multiple_selection', False,
-                                                                'ui'),
-
-        HostMethodIdentifier.GetForegroundColor: ('get_foreground_color', False, 'raw_ui'),
-        HostMethodIdentifier.SetForegroundColor: ('set_foreground_color', True, 'raw_ui'),
-        HostMethodIdentifier.GetBackgroundColor: ('get_background_color', False, 'raw_ui'),
-        HostMethodIdentifier.SetBackgroundColor: ('set_background_color', True, 'raw_ui'),
-        HostMethodIdentifier.GetCursorPosition: ('get_cursor_position', False, 'raw_ui'),
-        HostMethodIdentifier.SetCursorPosition: ('set_cursor_position', True, 'raw_ui'),
-        HostMethodIdentifier.GetWindowPosition: ('get_window_position', False, 'raw_ui'),
-        HostMethodIdentifier.SetWindowPosition: ('set_window_position', True, 'raw_ui'),
-        HostMethodIdentifier.GetCursorSize: ('get_cursor_size', False, 'raw_ui'),
-        HostMethodIdentifier.SetCursorSize: ('set_cursor_size', True, 'raw_ui'),
-        HostMethodIdentifier.GetBufferSize: ('get_buffer_size', False, 'raw_ui'),
-        HostMethodIdentifier.SetBufferSize: ('set_buffer_size', True, 'raw_ui'),
-        HostMethodIdentifier.GetWindowSize: ('get_window_size', False, 'raw_ui'),
-        HostMethodIdentifier.SetWindowSize: ('set_window_size', True, 'raw_ui'),
-        HostMethodIdentifier.GetWindowTitle: ('get_window_title', False, 'raw_ui'),
-        HostMethodIdentifier.SetWindowTitle: ('set_window_title', True, 'raw_ui'),
-        HostMethodIdentifier.GetMaxWindowSize: ('get_max_window_size', False, 'raw_ui'),
-        HostMethodIdentifier.GetMaxPhysicalWindowSize: ('get_max_physical_window_size', False, 'raw_ui'),
-        HostMethodIdentifier.GetKeyAvailable: ('get_key_available', False, 'raw_ui'),
-        HostMethodIdentifier.ReadKey: ('read_key', False, 'raw_ui'),
-        HostMethodIdentifier.FlushInputBuffer: ('flush_input_buffer', True, 'raw_ui'),
-        HostMethodIdentifier.SetBufferContents1: ('set_buffer_contents1', True, 'raw_ui'),
-        HostMethodIdentifier.SetBufferContents2: ('set_buffer_contents2', True, 'raw_ui'),
-        HostMethodIdentifier.GetBufferContents: ('get_buffer_contents', False, 'raw_ui'),
-        HostMethodIdentifier.ScrollBufferContents: ('scroll_buffer_contents', True, 'raw_ui'),
+        HostMethodIdentifier.GetName: ("get_name", False, "host"),
+        HostMethodIdentifier.GetVersion: ("get_version", False, "host"),
+        HostMethodIdentifier.GetInstanceId: ("get_instance_id", False, "host"),
+        HostMethodIdentifier.GetCurrentCulture: ("get_current_culture", False, "host"),
+        HostMethodIdentifier.GetCurrentUICulture: ("get_current_ui_culture", False, "host"),
+        HostMethodIdentifier.SetShouldExit: ("set_should_exit", True, "host"),
+        HostMethodIdentifier.EnterNestedPrompt: ("enter_nested_prompt", True, "host"),
+        HostMethodIdentifier.ExitNestedPrompt: ("exit_nested_prompt", True, "host"),
+        HostMethodIdentifier.NotifyBeginApplication: ("notify_begin_application", True, "host"),
+        HostMethodIdentifier.NotifyEndApplication: ("notify_end_application", True, "host"),
+        HostMethodIdentifier.PushRunspace: ("push_runspace", True, "host"),
+        HostMethodIdentifier.PopRunspace: ("pop_runspace", True, "host"),
+        HostMethodIdentifier.GetIsRunspacePushed: ("get_is_runspace_pushed", False, "host"),
+        HostMethodIdentifier.GetRunspace: ("get_runspace", False, "host"),
+        HostMethodIdentifier.ReadLine: ("read_line", False, "ui"),
+        HostMethodIdentifier.ReadLineAsSecureString: ("read_line_as_secure_string", False, "ui"),
+        HostMethodIdentifier.Write1: ("write1", True, "ui"),
+        HostMethodIdentifier.Write2: ("write2", True, "ui"),
+        HostMethodIdentifier.WriteLine1: ("write_line1", True, "ui"),
+        HostMethodIdentifier.WriteLine2: ("write_line2", True, "ui"),
+        HostMethodIdentifier.WriteLine3: ("write_line3", True, "ui"),
+        HostMethodIdentifier.WriteErrorLine: ("write_error_line", True, "ui"),
+        HostMethodIdentifier.WriteDebugLine: ("write_debug_line", True, "ui"),
+        HostMethodIdentifier.WriteProgress: ("write_progress", True, "ui"),
+        HostMethodIdentifier.WriteVerboseLine: ("write_verbose_line", True, "ui"),
+        HostMethodIdentifier.WriteWarningLine: ("write_warning_line", True, "ui"),
+        HostMethodIdentifier.Prompt: ("prompt", False, "ui"),
+        HostMethodIdentifier.PromptForCredential1: ("prompt_for_credential1", False, "ui"),
+        HostMethodIdentifier.PromptForCredential2: ("prompt_for_credential2", False, "ui"),
+        HostMethodIdentifier.PromptForChoice: ("prompt_for_choice", False, "ui"),
+        HostMethodIdentifier.PromptForChoiceMultipleSelection: ("prompt_for_choice_multiple_selection", False, "ui"),
+        HostMethodIdentifier.GetForegroundColor: ("get_foreground_color", False, "raw_ui"),
+        HostMethodIdentifier.SetForegroundColor: ("set_foreground_color", True, "raw_ui"),
+        HostMethodIdentifier.GetBackgroundColor: ("get_background_color", False, "raw_ui"),
+        HostMethodIdentifier.SetBackgroundColor: ("set_background_color", True, "raw_ui"),
+        HostMethodIdentifier.GetCursorPosition: ("get_cursor_position", False, "raw_ui"),
+        HostMethodIdentifier.SetCursorPosition: ("set_cursor_position", True, "raw_ui"),
+        HostMethodIdentifier.GetWindowPosition: ("get_window_position", False, "raw_ui"),
+        HostMethodIdentifier.SetWindowPosition: ("set_window_position", True, "raw_ui"),
+        HostMethodIdentifier.GetCursorSize: ("get_cursor_size", False, "raw_ui"),
+        HostMethodIdentifier.SetCursorSize: ("set_cursor_size", True, "raw_ui"),
+        HostMethodIdentifier.GetBufferSize: ("get_buffer_size", False, "raw_ui"),
+        HostMethodIdentifier.SetBufferSize: ("set_buffer_size", True, "raw_ui"),
+        HostMethodIdentifier.GetWindowSize: ("get_window_size", False, "raw_ui"),
+        HostMethodIdentifier.SetWindowSize: ("set_window_size", True, "raw_ui"),
+        HostMethodIdentifier.GetWindowTitle: ("get_window_title", False, "raw_ui"),
+        HostMethodIdentifier.SetWindowTitle: ("set_window_title", True, "raw_ui"),
+        HostMethodIdentifier.GetMaxWindowSize: ("get_max_window_size", False, "raw_ui"),
+        HostMethodIdentifier.GetMaxPhysicalWindowSize: ("get_max_physical_window_size", False, "raw_ui"),
+        HostMethodIdentifier.GetKeyAvailable: ("get_key_available", False, "raw_ui"),
+        HostMethodIdentifier.ReadKey: ("read_key", False, "raw_ui"),
+        HostMethodIdentifier.FlushInputBuffer: ("flush_input_buffer", True, "raw_ui"),
+        HostMethodIdentifier.SetBufferContents1: ("set_buffer_contents1", True, "raw_ui"),
+        HostMethodIdentifier.SetBufferContents2: ("set_buffer_contents2", True, "raw_ui"),
+        HostMethodIdentifier.GetBufferContents: ("get_buffer_contents", False, "raw_ui"),
+        HostMethodIdentifier.ScrollBufferContents: ("scroll_buffer_contents", True, "raw_ui"),
     }[method_identifier]
 
-    if host_type in ['ui', 'raw_ui']:
-        ui = getattr(host, 'ui', None)
+    if host_type in ["ui", "raw_ui"]:
+        ui = getattr(host, "ui", None)
         if ui is None:
             return MethodMetadata(is_void, None)
         host = ui
 
-    if host_type in ['raw_ui']:
-        raw_ui = getattr(host, 'raw_ui', None)
+    if host_type in ["raw_ui"]:
+        raw_ui = getattr(host, "raw_ui", None)
         if raw_ui is None:
             return MethodMetadata(is_void, None)
         host = raw_ui
@@ -536,17 +530,14 @@ def get_host_method(
     # The parameters for these methods in a PSRP specific format that don't strictly match the public .NET types.
     # This converts the method parameters to the public types and make a PSHost implementation easier for end users to
     # build.
-    if method_identifier in [HostMethodIdentifier.SetForegroundColor,
-                             HostMethodIdentifier.SetBackgroundColor]:
+    if method_identifier in [HostMethodIdentifier.SetForegroundColor, HostMethodIdentifier.SetBackgroundColor]:
         method_parameters = [ConsoleColor(method_parameters[0])]
 
-    elif method_identifier in [HostMethodIdentifier.SetCursorPosition,
-                               HostMethodIdentifier.SetWindowPosition]:
+    elif method_identifier in [HostMethodIdentifier.SetCursorPosition, HostMethodIdentifier.SetWindowPosition]:
         raw_coordinate = method_parameters[0]
         method_parameters = [Coordinates(X=raw_coordinate.x, Y=raw_coordinate.y)]
 
-    elif method_identifier in [HostMethodIdentifier.SetBufferSize,
-                               HostMethodIdentifier.SetWindowSize]:
+    elif method_identifier in [HostMethodIdentifier.SetBufferSize, HostMethodIdentifier.SetWindowSize]:
         raw_size = method_parameters[0]
         method_parameters = [Size(Height=raw_size.height, Width=raw_size.width)]
 

@@ -137,8 +137,8 @@ class AsyncPSDataStream(list):
         return val
 
     def append(
-            self,
-            value: typing.Optional[PSObject],
+        self,
+        value: typing.Optional[PSObject],
     ):
         if not self._complete:
             super().append(value)
@@ -169,11 +169,10 @@ class AsyncPSDataStream(list):
 
 
 class PipelineTask:
-
     def __init__(
-            self,
-            completed: threading.Event,
-            output_stream: typing.Optional[PSDataStream] = None,
+        self,
+        completed: threading.Event,
+        output_stream: typing.Optional[PSDataStream] = None,
     ):
         self._completed = completed
         self._output_stream = output_stream
@@ -185,11 +184,10 @@ class PipelineTask:
 
 
 class AsyncPipelineTask:
-
     def __init__(
-            self,
-            completed: asyncio.Event,
-            output_stream: typing.Optional[AsyncPSDataStream] = None,
+        self,
+        completed: asyncio.Event,
+        output_stream: typing.Optional[AsyncPSDataStream] = None,
     ):
         self._completed = completed
         self._output_stream = output_stream
@@ -201,17 +199,16 @@ class AsyncPipelineTask:
 
 
 class _RunspacePoolBase:
-
     def __init__(
-            self,
-            connection: ConnectionInfo,
-            apartment_state: ApartmentState = ApartmentState.Unknown,
-            thread_options: PSThreadOptions = PSThreadOptions.Default,
-            min_runspaces: int = 1,
-            max_runspaces: int = 1,
-            host: typing.Optional[PSHost] = None,
-            application_arguments: typing.Optional[typing.Dict] = None,
-            runspace_pool_id: typing.Optional[str] = None,
+        self,
+        connection: ConnectionInfo,
+        apartment_state: ApartmentState = ApartmentState.Unknown,
+        thread_options: PSThreadOptions = PSThreadOptions.Default,
+        min_runspaces: int = 1,
+        max_runspaces: int = 1,
+        host: typing.Optional[PSHost] = None,
+        application_arguments: typing.Optional[typing.Dict] = None,
+        runspace_pool_id: typing.Optional[str] = None,
     ):
         # We don't pass in host here as getting the host info might be a coroutine. It is set in open().
         self.pool = PSRunspacePool(
@@ -251,14 +248,17 @@ class _RunspacePoolBase:
         return [p for p in self.pipeline_table.values() if p.pipeline.state == PSInvocationState.Disconnected]
 
     def _get_event_registrations(
-            self,
-            event: PSRPEvent,
+        self,
+        event: PSRPEvent,
     ) -> typing.List:
-        if isinstance(event, (
+        if isinstance(
+            event,
+            (
                 PipelineHostCallEvent,
                 RunspaceAvailabilityEvent,
                 RunspacePoolHostCallEvent,
-        )):
+            ),
+        ):
             self._ci_table[int(event.ps_object.ci)] = event
 
         if event.pipeline_id:
@@ -272,7 +272,6 @@ class _RunspacePoolBase:
 
 
 class RunspacePool(_RunspacePoolBase):
-
     def __enter__(self):
         if self.state == RunspacePoolState.Disconnected:
             self.connect()
@@ -293,9 +292,9 @@ class RunspacePool(_RunspacePoolBase):
             self.pool.connect()
             self.connection.connect(self.pool)
 
-            with self._wait_condition(PSRPMessageType.SessionCapability) as sess, \
-                    self._wait_condition(PSRPMessageType.RunspacePoolInitData) as init, \
-                    self._wait_condition(PSRPMessageType.ApplicationPrivateData) as data:
+            with self._wait_condition(PSRPMessageType.SessionCapability) as sess, self._wait_condition(
+                PSRPMessageType.RunspacePoolInitData
+            ) as init, self._wait_condition(PSRPMessageType.ApplicationPrivateData) as data:
 
                 self._event_task = threading.Thread(target=self._response_listener)
                 self._event_task.start()
@@ -351,10 +350,10 @@ class RunspacePool(_RunspacePoolBase):
 
     @classmethod
     def get_runspace_pool(
-            cls,
-            connection_info: ConnectionInfo,
-            host: typing.Optional[PSHost] = None,
-    ) -> typing.Iterable['RunspacePool']:
+        cls,
+        connection_info: ConnectionInfo,
+        host: typing.Optional[PSHost] = None,
+    ) -> typing.Iterable["RunspacePool"]:
         for rpid, command_list in connection_info.enumerate():
             runspace_pool = RunspacePool(connection_info, host=host, runspace_pool_id=rpid)
             runspace_pool.pool.state = RunspacePoolState.Disconnected
@@ -387,15 +386,15 @@ class RunspacePool(_RunspacePoolBase):
         return self._validate_runspace_availability(ci)
 
     def set_max_runspaces(
-            self,
-            value: int,
+        self,
+        value: int,
     ) -> bool:
         ci = self.pool.set_max_runspaces(value)
         return self._validate_runspace_availability(ci)
 
     def set_min_runspaces(
-            self,
-            value: int,
+        self,
+        value: int,
     ) -> bool:
         ci = self.pool.set_min_runspaces(value)
         return self._validate_runspace_availability(ci)
@@ -429,21 +428,18 @@ class RunspacePool(_RunspacePoolBase):
 
                 except Exception as e:
                     # TODO: log.warning this
-                    print(f'Error running registered callback: {e!s}')
+                    print(f"Error running registered callback: {e!s}")
 
     def _send_and_wait_for(
-            self,
-            message_type: PSRPMessageType,
-            predicate: typing.Optional[typing.Callable] = None,
+        self,
+        message_type: PSRPMessageType,
+        predicate: typing.Optional[typing.Callable] = None,
     ):
         with self._wait_condition(message_type) as cond:
             self.connection.send_all(self.pool)
             cond.wait_for(predicate) if predicate else cond.wait()
 
-    def _validate_runspace_availability(
-            self,
-            ci: typing.Optional[int]
-    ) -> bool:
+    def _validate_runspace_availability(self, ci: typing.Optional[int]) -> bool:
         if ci is None:
             return True
 
@@ -456,8 +452,8 @@ class RunspacePool(_RunspacePoolBase):
 
     @contextlib.contextmanager
     def _wait_condition(
-            self,
-            message_type: PSRPMessageType,
+        self,
+        message_type: PSRPMessageType,
     ) -> typing.Iterable[threading.Condition]:
         cond = self._registrations[message_type][0]
         with cond:
@@ -465,7 +461,6 @@ class RunspacePool(_RunspacePoolBase):
 
 
 class AsyncRunspacePool(_RunspacePoolBase):
-
     async def __aenter__(self):
         if self.state == RunspacePoolState.Disconnected:
             await self.connect()
@@ -486,9 +481,9 @@ class AsyncRunspacePool(_RunspacePoolBase):
             self.pool.connect()
             await self.connection.connect(self.pool)
 
-            async with self._wait_condition(PSRPMessageType.SessionCapability) as sess, \
-                    self._wait_condition(PSRPMessageType.RunspacePoolInitData) as init, \
-                    self._wait_condition(PSRPMessageType.ApplicationPrivateData) as data:
+            async with self._wait_condition(PSRPMessageType.SessionCapability) as sess, self._wait_condition(
+                PSRPMessageType.RunspacePoolInitData
+            ) as init, self._wait_condition(PSRPMessageType.ApplicationPrivateData) as data:
 
                 self._event_task = asyncio_create_task(self._response_listener())
                 await sess.wait()
@@ -532,10 +527,10 @@ class AsyncRunspacePool(_RunspacePoolBase):
 
     @classmethod
     async def get_runspace_pools(
-            cls,
-            connection_info,
-            host: typing.Optional[PSHost] = None,
-    ) -> typing.AsyncIterable['AsyncRunspacePool']:
+        cls,
+        connection_info,
+        host: typing.Optional[PSHost] = None,
+    ) -> typing.AsyncIterable["AsyncRunspacePool"]:
         async for rpid, command_list in connection_info.enumerate():
             runspace_pool = AsyncRunspacePool(connection_info, host=host, runspace_pool_id=rpid)
             runspace_pool.pool.state = RunspacePoolState.Disconnected
@@ -558,15 +553,15 @@ class AsyncRunspacePool(_RunspacePoolBase):
         return await self._validate_runspace_availability(ci)
 
     async def set_max_runspaces(
-            self,
-            value: int,
+        self,
+        value: int,
     ) -> bool:
         ci = self.pool.set_max_runspaces(value)
         return await self._validate_runspace_availability(ci)
 
     async def set_min_runspaces(
-            self,
-            value: int,
+        self,
+        value: int,
     ) -> bool:
         ci = self.pool.set_min_runspaces(value)
         return await self._validate_runspace_availability(ci)
@@ -600,21 +595,18 @@ class AsyncRunspacePool(_RunspacePoolBase):
 
                 except Exception as e:
                     # TODO: log.warning this
-                    print(f'Error running registered callback: {e!s}')
+                    print(f"Error running registered callback: {e!s}")
 
     async def _send_and_wait_for(
-            self,
-            message_type: PSRPMessageType,
-            predicate: typing.Optional[typing.Callable] = None,
+        self,
+        message_type: PSRPMessageType,
+        predicate: typing.Optional[typing.Callable] = None,
     ):
         async with self._wait_condition(message_type) as cond:
             await self.connection.send_all(self.pool)
             await (cond.wait_for(predicate) if predicate else cond.wait())
 
-    async def _validate_runspace_availability(
-            self,
-            ci: typing.Optional[int]
-    ) -> bool:
+    async def _validate_runspace_availability(self, ci: typing.Optional[int]) -> bool:
         if ci is None:
             return True
 
@@ -627,8 +619,8 @@ class AsyncRunspacePool(_RunspacePoolBase):
 
     @asynccontextmanager
     async def _wait_condition(
-            self,
-            message_type: PSRPMessageType,
+        self,
+        message_type: PSRPMessageType,
     ) -> typing.AsyncIterable[asyncio.Condition]:
         cond = self._registrations[message_type][0]
         async with cond:
@@ -636,11 +628,10 @@ class AsyncRunspacePool(_RunspacePoolBase):
 
 
 class _PipelineBase:
-
     def __init__(
-            self,
-            runspace_pool: _RunspacePoolBase,
-            pipeline: PipelineType,
+        self,
+        runspace_pool: _RunspacePoolBase,
+        pipeline: PipelineType,
     ):
         self.runspace_pool = runspace_pool
         self.pipeline = pipeline
@@ -658,17 +649,16 @@ class _PipelineBase:
 
         self._registrations[PSRPMessageType.PipelineState].append(self._on_state)
         self._registrations[PSRPMessageType.PipelineHostCall].append(self._on_host_call)
-        self._registrations[PSRPMessageType.PipelineOutput].append(
-            lambda e: self._output_stream.append(e.ps_object))
+        self._registrations[PSRPMessageType.PipelineOutput].append(lambda e: self._output_stream.append(e.ps_object))
 
         stream_type = AsyncPSDataStream if isinstance(self, AsyncPipeline) else PSDataStream
         for name, mt in [
-            ('debug', PSRPMessageType.DebugRecord),
-            ('error', PSRPMessageType.ErrorRecord),
-            ('information', PSRPMessageType.InformationRecord),
-            ('progress', PSRPMessageType.ProgressRecord),
-            ('verbose', PSRPMessageType.VerboseRecord),
-            ('warning', PSRPMessageType.WarningRecord),
+            ("debug", PSRPMessageType.DebugRecord),
+            ("error", PSRPMessageType.ErrorRecord),
+            ("information", PSRPMessageType.InformationRecord),
+            ("progress", PSRPMessageType.ProgressRecord),
+            ("verbose", PSRPMessageType.VerboseRecord),
+            ("warning", PSRPMessageType.WarningRecord),
         ]:
             stream = stream_type()
             self.streams[name] = stream
@@ -683,10 +673,10 @@ class _PipelineBase:
         return self.pipeline.state
 
     def _new_task(
-            self,
-            output_stream: typing.Optional[typing.Union[AsyncPSDataStream, PSDataStream]] = None,
-            completed: typing.Optional[typing.Union[asyncio.Event, threading.Event]] = None,
-            for_stop: bool = False
+        self,
+        output_stream: typing.Optional[typing.Union[AsyncPSDataStream, PSDataStream]] = None,
+        completed: typing.Optional[typing.Union[asyncio.Event, threading.Event]] = None,
+        for_stop: bool = False,
     ):
         if isinstance(self, AsyncPipeline):
             stream_type = AsyncPSDataStream
@@ -714,20 +704,19 @@ class _PipelineBase:
         return task_type(completed, task_output)
 
     def _on_state(
-            self,
-            event: PSRPEvent,
+        self,
+        event: PSRPEvent,
     ):
         raise NotImplementedError()
 
     def _on_host_call(
-            self,
-            event: PSRPEvent,
+        self,
+        event: PSRPEvent,
     ):
         raise NotImplementedError()
 
 
 class Pipeline(_PipelineBase):
-
     def close(self):
         with self._close_lock:
             pipeline = self.runspace_pool.pipeline_table.get(self.pipeline.pipeline_id)
@@ -741,9 +730,9 @@ class Pipeline(_PipelineBase):
         return self.connect_async().wait()
 
     def connect_async(
-            self,
-            output_stream: typing.Optional[PSDataStream] = None,
-            completed: typing.Optional[threading.Event] = None,
+        self,
+        output_stream: typing.Optional[PSDataStream] = None,
+        completed: typing.Optional[threading.Event] = None,
     ) -> PipelineTask:
         task = self._new_task(output_stream, completed)
 
@@ -756,10 +745,10 @@ class Pipeline(_PipelineBase):
         return task
 
     def invoke(
-            self,
-            input_data: typing.Optional[typing.Iterable] = None,
-            output_stream: typing.Optional[PSDataStream] = None,
-            buffer_input: bool = True,
+        self,
+        input_data: typing.Optional[typing.Iterable] = None,
+        output_stream: typing.Optional[PSDataStream] = None,
+        buffer_input: bool = True,
     ) -> typing.Optional[typing.Iterable[typing.Optional[PSObject]]]:
         return self.invoke_async(
             input_data=input_data,
@@ -768,11 +757,11 @@ class Pipeline(_PipelineBase):
         ).wait()
 
     def invoke_async(
-            self,
-            input_data: typing.Optional[typing.Iterable] = None,
-            output_stream: typing.Optional[PSDataStream] = None,
-            completed: typing.Optional[threading.Event] = None,
-            buffer_input: bool = True,
+        self,
+        input_data: typing.Optional[typing.Iterable] = None,
+        output_stream: typing.Optional[PSDataStream] = None,
+        completed: typing.Optional[threading.Event] = None,
+        buffer_input: bool = True,
     ) -> PipelineTask:
         task = self._new_task(output_stream, completed)
         pool = self.runspace_pool.pool
@@ -814,8 +803,8 @@ class Pipeline(_PipelineBase):
         self.stop_async().wait()
 
     def stop_async(
-            self,
-            completed: typing.Optional[threading.Event] = None,
+        self,
+        completed: typing.Optional[threading.Event] = None,
     ) -> PipelineTask:
         task = self._new_task(completed=completed, for_stop=True)
         self.runspace_pool.connection.signal(self.runspace_pool.pool, self.pipeline.pipeline_id)
@@ -823,8 +812,8 @@ class Pipeline(_PipelineBase):
         return task
 
     def _on_state(
-            self,
-            event: PSRPEvent,
+        self,
+        event: PSRPEvent,
     ):
         try:
             self.close()
@@ -841,11 +830,11 @@ class Pipeline(_PipelineBase):
                 self._completed_stop = None
 
     def _on_host_call(
-            self,
-            event: PSRPEvent,
+        self,
+        event: PSRPEvent,
     ):
         host_call = event.ps_object
-        host = getattr(self, 'host', None) or self.runspace_pool.host
+        host = getattr(self, "host", None) or self.runspace_pool.host
 
         mi = host_call.mi
         mp = host_call.mp
@@ -857,36 +846,34 @@ class Pipeline(_PipelineBase):
             return_value = func() if func else _not_implemented()
 
         except Exception as e:
-            setattr(e, 'mi', mi)
+            setattr(e, "mi", mi)
 
             # Any failure for non-void methods should be propagated back to the peer.
             e_msg = str(e)
             if not e_msg:
-                e_msg = f'{type(e).__qualname__} when running {mi}'
+                e_msg = f"{type(e).__qualname__} when running {mi}"
 
             return_value = None
             error_record = ErrorRecord(
                 Exception=NETException(e_msg),
-                FullyQualifiedErrorId='RemoteHostExecutionException',
+                FullyQualifiedErrorId="RemoteHostExecutionException",
                 CategoryInfo=ErrorCategoryInfo(
-                    Reason='Exception',
+                    Reason="Exception",
                 ),
             )
 
             if method_metadata.is_void:
                 # TODO: Check this behaviour in real life.
-                self.streams['error'].append(error_record)
+                self.streams["error"].append(error_record)
                 self.stop()
                 return
 
         if not method_metadata.is_void:
-            self.runspace_pool.pool.host_response(host_call.ci, return_value=return_value,
-                                                  error_record=error_record)
+            self.runspace_pool.pool.host_response(host_call.ci, return_value=return_value, error_record=error_record)
             self.runspace_pool.connection.send_all(self.runspace_pool.pool)
 
 
 class AsyncPipeline(_PipelineBase):
-
     async def close(self):
         """Closes the pipeline.
 
@@ -907,9 +894,9 @@ class AsyncPipeline(_PipelineBase):
         return await task.wait()
 
     async def connect_async(
-            self,
-            output_stream: typing.Optional[AsyncPSDataStream] = None,
-            completed: typing.Optional[asyncio.Event] = None,
+        self,
+        output_stream: typing.Optional[AsyncPSDataStream] = None,
+        completed: typing.Optional[asyncio.Event] = None,
     ) -> AsyncPipelineTask:
         task = self._new_task(output_stream, completed)
 
@@ -922,10 +909,10 @@ class AsyncPipeline(_PipelineBase):
         return task
 
     async def invoke(
-            self,
-            input_data: typing.Optional[typing.Union[typing.Iterable, typing.AsyncIterable]] = None,
-            output_stream: typing.Optional[AsyncPSDataStream] = None,
-            buffer_input: bool = True,
+        self,
+        input_data: typing.Optional[typing.Union[typing.Iterable, typing.AsyncIterable]] = None,
+        output_stream: typing.Optional[AsyncPSDataStream] = None,
+        buffer_input: bool = True,
     ) -> typing.Optional[typing.AsyncIterable[typing.Optional[PSObject]]]:
         """Invoke the pipeline.
 
@@ -945,11 +932,11 @@ class AsyncPipeline(_PipelineBase):
         return await output_task.wait()
 
     async def invoke_async(
-            self,
-            input_data: typing.Optional[typing.Union[typing.Iterable, typing.AsyncIterable]] = None,
-            output_stream: typing.Optional[AsyncPSDataStream] = None,
-            completed: typing.Optional[asyncio.Event] = None,
-            buffer_input: bool = True,
+        self,
+        input_data: typing.Optional[typing.Union[typing.Iterable, typing.AsyncIterable]] = None,
+        output_stream: typing.Optional[AsyncPSDataStream] = None,
+        completed: typing.Optional[asyncio.Event] = None,
+        buffer_input: bool = True,
     ) -> AsyncPipelineTask:
         """Begin the pipeline.
 
@@ -981,6 +968,7 @@ class AsyncPipeline(_PipelineBase):
 
         if input_data is not None:
             if isinstance(input_data, typing.Iterable):
+
                 async def async_input_gen():
                     for data in input_data:
                         yield data
@@ -1016,8 +1004,8 @@ class AsyncPipeline(_PipelineBase):
         await task.wait()
 
     async def stop_async(
-            self,
-            completed: typing.Optional[asyncio.Event] = None,
+        self,
+        completed: typing.Optional[asyncio.Event] = None,
     ) -> AsyncPipelineTask:
         task = self._new_task(completed=completed, for_stop=True)
         await self.runspace_pool.connection.signal(self.runspace_pool.pool, self.pipeline.pipeline_id)
@@ -1025,8 +1013,8 @@ class AsyncPipeline(_PipelineBase):
         return task
 
     async def _on_state(
-            self,
-            event: PSRPEvent,
+        self,
+        event: PSRPEvent,
     ):
         try:
             await self.close()
@@ -1043,11 +1031,11 @@ class AsyncPipeline(_PipelineBase):
                 self._completed_stop = None
 
     async def _on_host_call(
-            self,
-            event: PSRPEvent,
+        self,
+        event: PSRPEvent,
     ):
         host_call = event.ps_object
-        host = getattr(self, 'host', None) or self.runspace_pool.host
+        host = getattr(self, "host", None) or self.runspace_pool.host
 
         mi = host_call.mi
         mp = host_call.mp
@@ -1059,43 +1047,41 @@ class AsyncPipeline(_PipelineBase):
             return_value = await _invoke_async(func or _not_implemented)
 
         except Exception as e:
-            setattr(e, 'mi', mi)
+            setattr(e, "mi", mi)
 
             # Any failure for non-void methods should be propagated back to the peer.
             e_msg = str(e)
             if not e_msg:
-                e_msg = f'{type(e).__qualname__} when running {mi}'
+                e_msg = f"{type(e).__qualname__} when running {mi}"
 
             return_value = None
             error_record = ErrorRecord(
                 Exception=NETException(e_msg),
-                FullyQualifiedErrorId='RemoteHostExecutionException',
+                FullyQualifiedErrorId="RemoteHostExecutionException",
                 CategoryInfo=ErrorCategoryInfo(
-                    Reason='Exception',
+                    Reason="Exception",
                 ),
             )
 
             if method_metadata.is_void:
                 # TODO: Check this behaviour in real life.
-                self.streams['error'].append(error_record)
+                self.streams["error"].append(error_record)
                 await self.stop()
                 return
 
         if not method_metadata.is_void:
-            self.runspace_pool.pool.host_response(host_call.ci, return_value=return_value,
-                                                  error_record=error_record)
+            self.runspace_pool.pool.host_response(host_call.ci, return_value=return_value, error_record=error_record)
             await self.runspace_pool.connection.send_all(self.runspace_pool.pool)
 
 
 class _CommandMetaPipelineBase(_PipelineBase):
-
     def __init__(
-            self,
-            runspace_pool: _RunspacePoolBase,
-            name: typing.Union[str, typing.List[str]],
-            command_type: CommandTypes = CommandTypes.All,
-            namespace: typing.Optional[typing.List[str]] = None,
-            arguments: typing.Optional[typing.List[str]] = None,
+        self,
+        runspace_pool: _RunspacePoolBase,
+        name: typing.Union[str, typing.List[str]],
+        command_type: CommandTypes = CommandTypes.All,
+        namespace: typing.Optional[typing.List[str]] = None,
+        arguments: typing.Optional[typing.List[str]] = None,
     ):
         pipeline = ClientGetCommandMetadata(
             runspace_pool=runspace_pool.pool,
@@ -1116,17 +1102,16 @@ class CommandMetaPipeline(_CommandMetaPipelineBase, Pipeline):
 
 
 class _PowerShellBase(_PipelineBase):
-
     def __init__(
-            self,
-            runspace_pool: _RunspacePoolBase,
-            add_to_history: bool = False,
-            apartment_state: typing.Optional[ApartmentState] = None,
-            history: typing.Optional[str] = None,
-            host: typing.Optional[PSHost] = None,
-            is_nested: bool = False,
-            remote_stream_options: RemoteStreamOptions = RemoteStreamOptions.none,
-            redirect_shell_error_to_out: bool = True,
+        self,
+        runspace_pool: _RunspacePoolBase,
+        add_to_history: bool = False,
+        apartment_state: typing.Optional[ApartmentState] = None,
+        history: typing.Optional[str] = None,
+        host: typing.Optional[PSHost] = None,
+        is_nested: bool = False,
+        remote_stream_options: RemoteStreamOptions = RemoteStreamOptions.none,
+        redirect_shell_error_to_out: bool = True,
     ):
         pipeline = ClientPowerShell(
             runspace_pool=runspace_pool.pool,
@@ -1141,16 +1126,16 @@ class _PowerShellBase(_PipelineBase):
         self.host = host
 
     def add_command(
-            self,
-            cmdlet: typing.Union[str, Command],
-            use_local_scope: typing.Optional[bool] = None,
+        self,
+        cmdlet: typing.Union[str, Command],
+        use_local_scope: typing.Optional[bool] = None,
     ):
         self.pipeline.add_command(cmdlet, use_local_scope)
 
     def add_script(
-            self,
-            script: str,
-            use_local_scope: typing.Optional[bool] = None,
+        self,
+        script: str,
+        use_local_scope: typing.Optional[bool] = None,
     ):
         self.pipeline.add_script(script, use_local_scope)
         return self
@@ -1161,13 +1146,12 @@ class _PowerShellBase(_PipelineBase):
 
 
 class PowerShell(_PowerShellBase, Pipeline):
-
     def invoke_async(
-            self,
-            input_data: typing.Optional[typing.Iterable] = None,
-            output_stream: typing.Optional[PSDataStream] = None,
-            completed: typing.Optional[threading.Event] = None,
-            buffer_input: bool = True,
+        self,
+        input_data: typing.Optional[typing.Iterable] = None,
+        output_stream: typing.Optional[PSDataStream] = None,
+        completed: typing.Optional[threading.Event] = None,
+        buffer_input: bool = True,
     ) -> PipelineTask:
         if self.host:
             self.pipeline.host = self.host.get_host_info()
@@ -1178,13 +1162,12 @@ class PowerShell(_PowerShellBase, Pipeline):
 
 
 class AsyncPowerShell(_PowerShellBase, AsyncPipeline):
-
     async def invoke_async(
-            self,
-            input_data: typing.Optional[typing.Union[typing.Iterable, typing.AsyncIterable]] = None,
-            output_stream: typing.Optional[AsyncPSDataStream] = None,
-            completed: typing.Optional[asyncio.Event] = None,
-            buffer_input: bool = True,
+        self,
+        input_data: typing.Optional[typing.Union[typing.Iterable, typing.AsyncIterable]] = None,
+        output_stream: typing.Optional[AsyncPSDataStream] = None,
+        completed: typing.Optional[asyncio.Event] = None,
+        buffer_input: bool = True,
     ) -> AsyncPipelineTask:
         if self.host:
             self.pipeline.host = await _invoke_async(self.host.get_host_info)

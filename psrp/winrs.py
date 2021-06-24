@@ -32,18 +32,25 @@ class AsyncWinRS:
     """
 
     def __init__(
-            self,
-            connection_uri: str,
-            codepage: typing.Optional[int] = None,
-            environment: typing.Optional[typing.Dict[str, str]] = None,
-            idle_time_out: typing.Optional[int] = None,
-            lifetime: typing.Optional[int] = None,
-            no_profile: typing.Optional[bool] = None,
-            working_directory: typing.Optional[str] = None,
+        self,
+        connection_uri: str,
+        codepage: typing.Optional[int] = None,
+        environment: typing.Optional[typing.Dict[str, str]] = None,
+        idle_time_out: typing.Optional[int] = None,
+        lifetime: typing.Optional[int] = None,
+        no_profile: typing.Optional[bool] = None,
+        working_directory: typing.Optional[str] = None,
     ):
         wsman = WSMan(connection_uri)
-        self.winrs = WinRS(wsman, codepage=codepage, environment=environment, idle_time_out=idle_time_out,
-                           lifetime=lifetime, no_profile=no_profile, working_directory=working_directory)
+        self.winrs = WinRS(
+            wsman,
+            codepage=codepage,
+            environment=environment,
+            idle_time_out=idle_time_out,
+            lifetime=lifetime,
+            no_profile=no_profile,
+            working_directory=working_directory,
+        )
         self._io = AsyncWSManConnection(connection_uri)
 
     async def __aenter__(self):
@@ -56,26 +63,26 @@ class AsyncWinRS:
         await self._io.close()
 
     async def close(self):
-        """ Closes the WinRS shell. """
+        """Closes the WinRS shell."""
         self.winrs.close()
         await self._exchange_data()
 
     async def create(self):
-        """ Opens the WinRS shell. """
+        """Opens the WinRS shell."""
         self.winrs.open()
         await self._exchange_data()
 
     async def execute(
-            self,
-            executable: str,
-            args: typing.Optional[typing.List[str]] = None,
-            no_shell: bool = False,
-    ) -> 'AsyncWinRSProcess':
-        """ Starts a new process on the WinRS shell. """
+        self,
+        executable: str,
+        args: typing.Optional[typing.List[str]] = None,
+        no_shell: bool = False,
+    ) -> "AsyncWinRSProcess":
+        """Starts a new process on the WinRS shell."""
         return AsyncWinRSProcess(self, executable, args=args, no_shell=no_shell)
 
     async def _exchange_data(self, io=None):
-        """ Sends the pending messages from the WinRS shell over the IO object and returns the response. """
+        """Sends the pending messages from the WinRS shell over the IO object and returns the response."""
         if not io:
             io = self._io
 
@@ -87,13 +94,12 @@ class AsyncWinRS:
 
 
 class AsyncWinRSProcess:
-
     def __init__(
-            self,
-            winrs: AsyncWinRS,
-            executable: str,
-            args: typing.Optional[typing.List[str]] = None,
-            no_shell: bool = False,
+        self,
+        winrs: AsyncWinRS,
+        executable: str,
+        args: typing.Optional[typing.List[str]] = None,
+        no_shell: bool = False,
     ):
         self.executable = executable
         self.args = args
@@ -117,33 +123,33 @@ class AsyncWinRSProcess:
         self._receive_task = None
 
     async def poll(
-            self,
+        self,
     ) -> typing.Optional[int]:
-        a = ''
+        a = ""
 
     async def wait(
-            self,
-            timeout: typing.Optional[int] = None,
+        self,
+        timeout: typing.Optional[int] = None,
     ) -> int:
         await self._receive_task
 
     async def communicate(
-            self,
-            input_data: typing.Optional[bytes] = None,
-            timeout: typing.Optional[int] = None,
+        self,
+        input_data: typing.Optional[bytes] = None,
+        timeout: typing.Optional[int] = None,
     ) -> typing.Tuple[bytes, bytes]:
         self.stdin.write(input_data)
         await self.stdin.drain()
 
     async def send_signal(
-            self,
-            signal: SignalCode,
+        self,
+        signal: SignalCode,
     ):
         self._winrs.winrs.signal(signal, self._command_id)
         await self._winrs._exchange_data()
 
     async def start(
-            self,
+        self,
     ):
         loop = asyncio.get_event_loop()
         self.stdout = asyncio.StreamReader(loop=loop)
@@ -162,17 +168,17 @@ class AsyncWinRSProcess:
         self._receive_task = asyncio.create_task(self._receive())
 
     async def terminate(
-            self,
+        self,
     ):
         await self.send_signal(SignalCode.terminate)
 
     async def kill(
-            self,
+        self,
     ):
         await self.send_signal(SignalCode.ctrl_c)
 
     async def _receive(
-            self,
+        self,
     ):
         # Use a new WSMan connection so we can send the Receive requests in parallel to the main shell connection.
         async with AsyncWSManConnection(self._winrs.winrs.wsman.connection_uri) as io:
@@ -191,7 +197,7 @@ class AsyncWinRSProcess:
                 self._state = receive_response.command_state
 
                 buffer = receive_response.get_streams()
-                pipe_map = [('stdout', self.stdout), ('stderr', self.stderr)]
+                pipe_map = [("stdout", self.stdout), ("stderr", self.stderr)]
                 for name, pipe in pipe_map:
                     for data in buffer.get(name, []):
                         pipe.feed_data(data)
@@ -201,7 +207,6 @@ class AsyncWinRSProcess:
 
 
 class StdinTransport(asyncio.transports.WriteTransport):
-
     def __init__(self, loop, protocol):
         super().__init__()
         self._loop = loop
@@ -221,7 +226,7 @@ class StdinTransport(asyncio.transports.WriteTransport):
         The default implementation concatenates the arguments and
         calls write() on the result.
         """
-        data = b''.join(list_of_data)
+        data = b"".join(list_of_data)
         self.write(data)
 
     def write_eof(self):

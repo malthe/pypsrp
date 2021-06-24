@@ -30,29 +30,28 @@ class _PSRPEventRegistry(type):
 
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        message_type = getattr(cls, 'MESSAGE_TYPE', None)
+        message_type = getattr(cls, "MESSAGE_TYPE", None)
         if message_type is not None and message_type not in cls.__registry:
             cls.__registry[message_type] = cls
 
     def __call__(
-            cls,
-            message_type: PSRPMessageType,
-            ps_object: PSObject,
-            runspace_pool_id: str,
-            pipeline_id: typing.Optional[str] = None,
+        cls,
+        message_type: PSRPMessageType,
+        ps_object: PSObject,
+        runspace_pool_id: str,
+        pipeline_id: typing.Optional[str] = None,
     ):
         new_cls = cls.__registry.get(message_type, cls)
         return super(_PSRPEventRegistry, new_cls).__call__(message_type, ps_object, runspace_pool_id, pipeline_id)
 
 
 class PSRPEvent(metaclass=_PSRPEventRegistry):
-
     def __init__(
-            self,
-            message_type: PSRPMessageType,
-            ps_object: PSObject,
-            runspace_pool_id: str,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        message_type: PSRPMessageType,
+        ps_object: PSObject,
+        runspace_pool_id: str,
+        pipeline_id: typing.Optional[str] = None,
     ):
         self.ps_object = ps_object
         self.runspace_pool_id = runspace_pool_id
@@ -144,7 +143,7 @@ class PipelineStateEvent(PSRPEvent):
 
     @property
     def reason(self) -> typing.Optional[ErrorRecord]:
-        return getattr(self.ps_object, 'ExceptionAsErrorRecord', None)
+        return getattr(self.ps_object, "ExceptionAsErrorRecord", None)
 
 
 class ProgressRecordEvent(PSRPEvent):
@@ -159,11 +158,11 @@ class RunspaceAvailabilityEvent(PSRPEvent):
     MESSAGE_TYPE = PSRPMessageType.RunspaceAvailability
 
     def __new__(
-            cls,
-            message_type: PSRPMessageType,
-            ps_object: PSObject,
-            runspace_pool_id: str,
-            pipeline_id: typing.Optional[str] = None,
+        cls,
+        message_type: PSRPMessageType,
+        ps_object: PSObject,
+        runspace_pool_id: str,
+        pipeline_id: typing.Optional[str] = None,
     ):
         # Special case, this message has a boolean value when in response to Set[Max|Min]Runspaces and an Int64
         # value when in response to GetAvailableRunspaces. We want to make sure our event is clear what it is in
@@ -177,14 +176,12 @@ class RunspaceAvailabilityEvent(PSRPEvent):
 
 
 class SetRunspaceAvailabilityEvent(RunspaceAvailabilityEvent):
-
     @property
     def success(self) -> bool:
         return self.ps_object.SetMinMaxRunspacesResponse
 
 
 class GetRunspaceAvailabilityEvent(RunspaceAvailabilityEvent):
-
     @property
     def count(self) -> int:
         return int(self.ps_object.SetMinMaxRunspacesResponse)
@@ -211,7 +208,7 @@ class RunspacePoolStateEvent(PSRPEvent):
 
     @property
     def reason(self) -> typing.Optional[ErrorRecord]:
-        return getattr(self.ps_object, 'ExceptionAsErrorRecord', None)
+        return getattr(self.ps_object, "ExceptionAsErrorRecord", None)
 
 
 class SessionCapabilityEvent(PSRPEvent):

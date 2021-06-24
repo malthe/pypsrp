@@ -70,22 +70,23 @@ class OutputBufferingMode(enum.Enum):
 
 
 class _ConnectionInfoBase:
-
     def __new__(cls, *args, **kwargs):
         if cls in [_ConnectionInfoBase, ConnectionInfo, AsyncConnectionInfo, OutOfProcInfo, AsyncOutOfProcInfo]:
-            raise TypeError(f'Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for '
-                            f'PSRP connection implementations.')
+            raise TypeError(
+                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
+                f"PSRP connection implementations."
+            )
 
         return super().__new__(cls)
 
     def __init__(
-            self,
+        self,
     ):
         self._buffer: typing.Dict[str, bytearray] = {}
 
     def get_fragment_size(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ) -> int:
         """Get the max PSRP fragment size.
 
@@ -97,9 +98,9 @@ class _ConnectionInfoBase:
         return 32_768
 
     def next_payload(
-            self,
-            pool: RunspacePool,
-            buffer: bool = False,
+        self,
+        pool: RunspacePool,
+        buffer: bool = False,
     ) -> typing.Optional[PSRPPayload]:
         """Get the next payload.
 
@@ -137,9 +138,9 @@ class _ConnectionInfoBase:
     ################
 
     def close(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         """Close the Runspace Pool/Pipeline.
 
@@ -154,9 +155,9 @@ class _ConnectionInfoBase:
         raise NotImplementedError()
 
     def command(
-            self,
-            pool: RunspacePool,
-            pipeline_id: str,
+        self,
+        pool: RunspacePool,
+        pipeline_id: str,
     ):
         """Create the pipeline.
 
@@ -172,8 +173,8 @@ class _ConnectionInfoBase:
         raise NotImplementedError()
 
     def create(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         """Create the Runspace Pool
 
@@ -189,8 +190,8 @@ class _ConnectionInfoBase:
         raise NotImplementedError()
 
     def send_all(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         """Send all PSRP payloads.
 
@@ -205,9 +206,9 @@ class _ConnectionInfoBase:
                 return
 
     def send(
-            self,
-            pool: RunspacePool,
-            buffer: bool = False,
+        self,
+        pool: RunspacePool,
+        buffer: bool = False,
     ) -> bool:
         """Send PSRP payload.
 
@@ -226,9 +227,9 @@ class _ConnectionInfoBase:
         raise NotImplementedError()
 
     def signal(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         """Send a signal to the Runspace Pool/Pipeline
 
@@ -246,9 +247,9 @@ class _ConnectionInfoBase:
     #####################
 
     def connect(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         """Connect to a Runspace Pool/Pipeline.
 
@@ -263,8 +264,8 @@ class _ConnectionInfoBase:
         raise NotImplementedError()
 
     def disconnect(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         """Disconnect a Runspace Pool.
 
@@ -278,8 +279,8 @@ class _ConnectionInfoBase:
         raise NotImplementedError()
 
     def reconnect(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         """Reconnect a Runspace Pool.
 
@@ -309,9 +310,8 @@ class _ConnectionInfoBase:
 
 
 class ConnectionInfo(_ConnectionInfoBase):
-
     def __init__(
-            self,
+        self,
     ):
         super().__init__()
 
@@ -319,9 +319,9 @@ class ConnectionInfo(_ConnectionInfoBase):
         self._queue_lock = threading.Lock()
 
     def queue_response(
-            self,
-            runspace_pool_id: str,
-            data: typing.Optional[bytes] = None,
+        self,
+        runspace_pool_id: str,
+        data: typing.Optional[bytes] = None,
     ):
         """Queue received data.
 
@@ -338,8 +338,8 @@ class ConnectionInfo(_ConnectionInfoBase):
         data_queue.put(data)
 
     def wait_event(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ) -> typing.Optional[PSRPEvent]:
         """Get the next PSRP event.
 
@@ -366,8 +366,8 @@ class ConnectionInfo(_ConnectionInfoBase):
             pool.receive_data(msg)
 
     def _get_pool_queue(
-            self,
-            runspace_pool_id: str,
+        self,
+        runspace_pool_id: str,
     ):
         runspace_pool_id = runspace_pool_id.lower()
 
@@ -378,25 +378,24 @@ class ConnectionInfo(_ConnectionInfoBase):
 
 
 class AsyncConnectionInfo(_ConnectionInfoBase):
-
     def __init__(
-            self,
+        self,
     ):
         super().__init__()
         self._data_queue: typing.Dict[str, asyncio.Queue] = {}
         self._queue_lock = asyncio.Lock()
 
     async def queue_response(
-            self,
-            runspace_pool_id: str,
-            data: typing.Optional[PSRPPayload] = None,
+        self,
+        runspace_pool_id: str,
+        data: typing.Optional[PSRPPayload] = None,
     ):
         data_queue = await self._get_pool_queue(runspace_pool_id)
         await data_queue.put(data)
 
     async def wait_event(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ) -> typing.Optional[PSRPEvent]:
         while True:
             event = pool.next_event()
@@ -410,8 +409,8 @@ class AsyncConnectionInfo(_ConnectionInfoBase):
             pool.receive_data(msg)
 
     async def _get_pool_queue(
-            self,
-            runspace_pool_id: str,
+        self,
+        runspace_pool_id: str,
     ):
         runspace_pool_id = runspace_pool_id.lower()
 
@@ -421,28 +420,28 @@ class AsyncConnectionInfo(_ConnectionInfoBase):
         return self._data_queue[runspace_pool_id]
 
     async def close(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         raise NotImplementedError()
 
     async def command(
-            self,
-            pool: RunspacePool,
-            pipeline_id: str,
+        self,
+        pool: RunspacePool,
+        pipeline_id: str,
     ):
         raise NotImplementedError()
 
     async def create(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         raise NotImplementedError()
 
     async def send_all(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         while True:
             sent = await self.send(pool)
@@ -450,35 +449,35 @@ class AsyncConnectionInfo(_ConnectionInfoBase):
                 return
 
     async def send(
-            self,
-            pool: RunspacePool,
-            buffer: bool = False,
+        self,
+        pool: RunspacePool,
+        buffer: bool = False,
     ) -> bool:
         raise NotImplementedError()
 
     async def signal(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         raise NotImplementedError()
 
     async def connect(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         raise NotImplementedError()
 
     async def disconnect(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         raise NotImplementedError()
 
     async def reconnect(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         raise NotImplementedError()
 
@@ -487,9 +486,8 @@ class AsyncConnectionInfo(_ConnectionInfoBase):
 
 
 class OutOfProcInfo(ConnectionInfo):
-
     def __init__(
-            self,
+        self,
     ):
         super().__init__()
 
@@ -514,8 +512,8 @@ class OutOfProcInfo(ConnectionInfo):
         raise NotImplementedError()
 
     def write(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ):
         """Write data.
 
@@ -542,13 +540,13 @@ class OutOfProcInfo(ConnectionInfo):
         raise NotImplementedError()
 
     def close(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         with self._wait_condition:
-            self.write(_ps_guid_packet('Close', ps_guid=pipeline_id))
-            self._wait_ack('Close', pipeline_id)
+            self.write(_ps_guid_packet("Close", ps_guid=pipeline_id))
+            self._wait_ack("Close", pipeline_id)
 
         if not pipeline_id:
             self.stop()
@@ -557,22 +555,22 @@ class OutOfProcInfo(ConnectionInfo):
             self._runspace_pool = None
 
     def command(
-            self,
-            pool: RunspacePool,
-            pipeline_id: str,
+        self,
+        pool: RunspacePool,
+        pipeline_id: str,
     ):
         with self._wait_condition:
-            self.write(_ps_guid_packet('Command', ps_guid=pipeline_id))
-            self._wait_ack('Command', pipeline_id)
+            self.write(_ps_guid_packet("Command", ps_guid=pipeline_id))
+            self._wait_ack("Command", pipeline_id)
 
         self.send(pool)
 
     def create(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         if self._runspace_pool:
-            raise Exception('Cannot open a new pool on the same connection')
+            raise Exception("Cannot open a new pool on the same connection")
 
         self._runspace_pool = pool
         self.start()
@@ -582,34 +580,33 @@ class OutOfProcInfo(ConnectionInfo):
         self.send(pool)
 
     def send(
-            self,
-            pool: RunspacePool,
-            buffer: bool = False,
+        self,
+        pool: RunspacePool,
+        buffer: bool = False,
     ) -> bool:
         payload = self.next_payload(pool, buffer=buffer)
         if not payload:
             return False
 
         with self._wait_condition:
-            self.write(_ps_data_packet(payload.data, stream_type=payload.stream_type,
-                                       ps_guid=payload.pipeline_id))
-            self._wait_ack('Data', payload.pipeline_id)
+            self.write(_ps_data_packet(payload.data, stream_type=payload.stream_type, ps_guid=payload.pipeline_id))
+            self._wait_ack("Data", payload.pipeline_id)
 
         return True
 
     def signal(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         with self._wait_condition:
-            self.write(_ps_guid_packet('Signal', ps_guid=pipeline_id))
-            self._wait_ack('Signal', pipeline_id)
+            self.write(_ps_guid_packet("Signal", ps_guid=pipeline_id))
+            self._wait_ack("Signal", pipeline_id)
 
     def _wait_ack(
-            self,
-            action: str,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        action: str,
+        pipeline_id: typing.Optional[str] = None,
     ):
         key = f'{action}Ack:{pipeline_id or ""}'
         self._wait_table.append(key)
@@ -623,7 +620,7 @@ class OutOfProcInfo(ConnectionInfo):
 
             packet = ElementTree.fromstring(data)
             data = base64.b64decode(packet.text) if packet.text else None
-            ps_guid = packet.attrib['PSGuid'].upper()
+            ps_guid = packet.attrib["PSGuid"].upper()
             if ps_guid == _EMPTY_UUID:
                 ps_guid = None
 
@@ -631,7 +628,7 @@ class OutOfProcInfo(ConnectionInfo):
                 data = PSRPPayload(data, StreamType.default, ps_guid)
 
             tag = packet.tag
-            if tag == 'Data':
+            if tag == "Data":
                 self.queue_response(self._runspace_pool.runspace_id, data)
 
             else:
@@ -643,9 +640,8 @@ class OutOfProcInfo(ConnectionInfo):
 
 
 class AsyncOutOfProcInfo(AsyncConnectionInfo):
-
     def __init__(
-            self,
+        self,
     ):
         super().__init__()
 
@@ -670,8 +666,8 @@ class AsyncOutOfProcInfo(AsyncConnectionInfo):
         raise NotImplementedError()
 
     async def write(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ):
         """Write data.
 
@@ -698,13 +694,13 @@ class AsyncOutOfProcInfo(AsyncConnectionInfo):
         raise NotImplementedError()
 
     async def close(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         async with self._wait_condition:
-            await self.write(_ps_guid_packet('Close', ps_guid=pipeline_id))
-            await self._wait_ack('Close', pipeline_id)
+            await self.write(_ps_guid_packet("Close", ps_guid=pipeline_id))
+            await self._wait_ack("Close", pipeline_id)
 
         if not pipeline_id:
             await self.stop()
@@ -713,22 +709,22 @@ class AsyncOutOfProcInfo(AsyncConnectionInfo):
             self._runspace_pool = None
 
     async def command(
-            self,
-            pool: RunspacePool,
-            pipeline_id: str,
+        self,
+        pool: RunspacePool,
+        pipeline_id: str,
     ):
         async with self._wait_condition:
-            await self.write(_ps_guid_packet('Command', ps_guid=pipeline_id))
-            await self._wait_ack('Command', pipeline_id)
+            await self.write(_ps_guid_packet("Command", ps_guid=pipeline_id))
+            await self._wait_ack("Command", pipeline_id)
 
         await self.send(pool)
 
     async def create(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         if self._runspace_pool:
-            raise Exception('Cannot open a new pool on the same connection')
+            raise Exception("Cannot open a new pool on the same connection")
 
         self._runspace_pool = pool
         await self.start()
@@ -737,34 +733,35 @@ class AsyncOutOfProcInfo(AsyncConnectionInfo):
         await self.send(pool)
 
     async def send(
-            self,
-            pool: RunspacePool,
-            buffer: bool = False,
+        self,
+        pool: RunspacePool,
+        buffer: bool = False,
     ) -> bool:
         payload = self.next_payload(pool, buffer=buffer)
         if not payload:
             return False
 
         async with self._wait_condition:
-            await self.write(_ps_data_packet(payload.data, stream_type=payload.stream_type,
-                                             ps_guid=payload.pipeline_id))
-            await self._wait_ack('Data', payload.pipeline_id)
+            await self.write(
+                _ps_data_packet(payload.data, stream_type=payload.stream_type, ps_guid=payload.pipeline_id)
+            )
+            await self._wait_ack("Data", payload.pipeline_id)
 
         return True
 
     async def signal(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         async with self._wait_condition:
-            await self.write(_ps_guid_packet('Signal', ps_guid=pipeline_id))
-            await self._wait_ack('Signal', pipeline_id)
+            await self.write(_ps_guid_packet("Signal", ps_guid=pipeline_id))
+            await self._wait_ack("Signal", pipeline_id)
 
     async def _wait_ack(
-            self,
-            action: str,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        action: str,
+        pipeline_id: typing.Optional[str] = None,
     ):
         key = f'{action}Ack:{pipeline_id or ""}'
         self._wait_table.append(key)
@@ -778,7 +775,7 @@ class AsyncOutOfProcInfo(AsyncConnectionInfo):
 
             packet = ElementTree.fromstring(data)
             data = base64.b64decode(packet.text) if packet.text else None
-            ps_guid = packet.attrib['PSGuid'].upper()
+            ps_guid = packet.attrib["PSGuid"].upper()
             if ps_guid == _EMPTY_UUID:
                 ps_guid = None
 
@@ -786,7 +783,7 @@ class AsyncOutOfProcInfo(AsyncConnectionInfo):
                 data = PSRPPayload(data, StreamType.default, ps_guid)
 
             tag = packet.tag
-            if tag == 'Data':
+            if tag == "Data":
                 await self.queue_response(self._runspace_pool.runspace_id, data)
 
             else:
@@ -813,16 +810,16 @@ class ProcessInfo(OutOfProcInfo):
     """
 
     def __init__(
-            self,
-            executable: str = 'pwsh',
-            arguments: typing.Optional[typing.List[str]] = None,
+        self,
+        executable: str = "pwsh",
+        arguments: typing.Optional[typing.List[str]] = None,
     ):
         super().__init__()
 
         self.executable = executable
         self.arguments = arguments or []
-        if executable == 'pwsh' and arguments is None:
-            self.arguments = ['-NoProfile', '-NoLogo', '-s']
+        if executable == "pwsh" and arguments is None:
+            self.arguments = ["-NoProfile", "-NoLogo", "-s"]
 
         self._process = Process(self.executable, self.arguments)
 
@@ -830,8 +827,8 @@ class ProcessInfo(OutOfProcInfo):
         return self._process.read()
 
     def write(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ):
         self._process.write(data)
 
@@ -858,16 +855,16 @@ class AsyncProcessInfo(AsyncOutOfProcInfo):
     """
 
     def __init__(
-            self,
-            executable: str = 'pwsh',
-            arguments: typing.Optional[typing.List[str]] = None,
+        self,
+        executable: str = "pwsh",
+        arguments: typing.Optional[typing.List[str]] = None,
     ):
         super().__init__()
 
         self.executable = executable
         self.arguments = arguments or []
-        if executable == 'pwsh' and arguments is None:
-            self.arguments = ['-NoProfile', '-NoLogo', '-s']
+        if executable == "pwsh" and arguments is None:
+            self.arguments = ["-NoProfile", "-NoLogo", "-s"]
 
         self._process = AsyncProcess(self.executable, self.arguments)
 
@@ -875,8 +872,8 @@ class AsyncProcessInfo(AsyncOutOfProcInfo):
         return await self._process.read()
 
     async def write(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ):
         await self._process.write(data)
 
@@ -888,16 +885,15 @@ class AsyncProcessInfo(AsyncOutOfProcInfo):
 
 
 class AsyncSSHInfo(AsyncOutOfProcInfo):
-
     def __init__(
-            self,
-            hostname: str,
-            port: int = 22,
-            username: typing.Optional[str] = None,
-            password: typing.Optional[str] = None,
-            subsystem: str = 'powershell',
-            executable: typing.Optional[str] = None,
-            arguments: typing.Optional[typing.List[str]] = None,
+        self,
+        hostname: str,
+        port: int = 22,
+        username: typing.Optional[str] = None,
+        password: typing.Optional[str] = None,
+        subsystem: str = "powershell",
+        executable: typing.Optional[str] = None,
+        arguments: typing.Optional[typing.List[str]] = None,
     ):
         super().__init__()
         self._ssh = AsyncSSH(
@@ -914,8 +910,8 @@ class AsyncSSHInfo(AsyncOutOfProcInfo):
         return await self._ssh.read()
 
     async def write(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ):
         await self._ssh.write(data)
 
@@ -927,15 +923,14 @@ class AsyncSSHInfo(AsyncOutOfProcInfo):
 
 
 class WSManInfo(ConnectionInfo):
-
     def __init__(
-            self,
-            connection_uri: str,
-            configuration_name='Microsoft.PowerShell',
-            buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
-            idle_timeout: typing.Optional[int] = None,
-            *args,
-            **kwargs,
+        self,
+        connection_uri: str,
+        configuration_name="Microsoft.PowerShell",
+        buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
+        idle_timeout: typing.Optional[int] = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
 
@@ -946,7 +941,7 @@ class WSManInfo(ConnectionInfo):
         self._connection_uri = connection_uri
         self._buffer_mode = buffer_mode
         self._idle_timeout = idle_timeout
-        self._configuration_name = f'http://schemas.microsoft.com/powershell/{configuration_name}'
+        self._configuration_name = f"http://schemas.microsoft.com/powershell/{configuration_name}"
 
 
 class AsyncWSManInfo(AsyncConnectionInfo):
@@ -961,19 +956,19 @@ class AsyncWSManInfo(AsyncConnectionInfo):
     """
 
     def __init__(
-            self,
-            connection_uri: str,
-            configuration_name='Microsoft.PowerShell',
-            buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
-            idle_timeout: typing.Optional[int] = None,
-            *args,
-            **kwargs,
+        self,
+        connection_uri: str,
+        configuration_name="Microsoft.PowerShell",
+        buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
+        idle_timeout: typing.Optional[int] = None,
+        *args,
+        **kwargs,
     ):
         super().__init__()
 
         self._connection_args = args
         self._connection_kwargs = kwargs
-        self._connection_kwargs['connection_uri'] = connection_uri
+        self._connection_kwargs["connection_uri"] = connection_uri
         self._connection = AsyncWSManConnection(*self._connection_args, **self._connection_kwargs)
 
         self._runspace_table: typing.Dict[str, WinRS] = {}
@@ -981,17 +976,17 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         self._connection_uri = connection_uri
         self._buffer_mode = buffer_mode
         self._idle_timeout = idle_timeout
-        self._configuration_name = f'http://schemas.microsoft.com/powershell/{configuration_name}'
+        self._configuration_name = f"http://schemas.microsoft.com/powershell/{configuration_name}"
 
     async def close(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         if pipeline_id is not None:
             await self.signal(pool, pipeline_id, signal_code=SignalCode.terminate)
 
-            pipeline_task = self._listener_tasks.pop(f'{pool.runspace_id}:{pipeline_id}')
+            pipeline_task = self._listener_tasks.pop(f"{pool.runspace_id}:{pipeline_id}")
             await pipeline_task
 
         else:
@@ -1006,7 +1001,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
             # Wait for the listener task(s) to complete and remove the RunspacePool from our internal table.
             listen_tasks = []
             for task_id in list(self._listener_tasks.keys()):
-                if task_id.startswith(f'{pool.runspace_id}:'):
+                if task_id.startswith(f"{pool.runspace_id}:"):
                     listen_tasks.append(self._listener_tasks.pop(task_id))
 
             await asyncio.gather(*listen_tasks)
@@ -1017,25 +1012,30 @@ class AsyncWSManInfo(AsyncConnectionInfo):
                 await self._connection.close()
 
     async def command(
-            self,
-            pool: RunspacePool,
-            pipeline_id: str,
+        self,
+        pool: RunspacePool,
+        pipeline_id: str,
     ):
         winrs = self._runspace_table[pool.runspace_id]
 
         payload = self.next_payload(pool)
-        winrs.command('', args=[base64.b64encode(payload.data).decode()], command_id=pipeline_id)
+        winrs.command("", args=[base64.b64encode(payload.data).decode()], command_id=pipeline_id)
         resp = await self._connection.send(winrs.data_to_send())
         winrs.receive_data(resp)
 
         await self._create_listener(pool, pipeline_id)
 
     async def create(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
-        winrs = WinRS(WSMan(self._connection_uri), self._configuration_name, shell_id=pool.runspace_id,
-                      input_streams='stdin pr', output_streams='stdout')
+        winrs = WinRS(
+            WSMan(self._connection_uri),
+            self._configuration_name,
+            shell_id=pool.runspace_id,
+            input_streams="stdin pr",
+            output_streams="stdout",
+        )
         self._runspace_table[pool.runspace_id] = winrs
 
         payload = self.next_payload(pool)
@@ -1052,9 +1052,9 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         await self._create_listener(pool)
 
     async def send(
-            self,
-            pool: RunspacePool,
-            buffer: bool = False,
+        self,
+        pool: RunspacePool,
+        buffer: bool = False,
     ) -> bool:
         payload = self.next_payload(pool, buffer=buffer)
         if not payload:
@@ -1062,7 +1062,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
 
         winrs = self._runspace_table[pool.runspace_id]
 
-        stream = 'stdin' if payload.stream_type == StreamType.default else 'pr'
+        stream = "stdin" if payload.stream_type == StreamType.default else "pr"
         winrs.send(stream, payload.data, command_id=payload.pipeline_id)
         resp = await self._connection.send(winrs.data_to_send())
         winrs.receive_data(resp)
@@ -1070,10 +1070,10 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         return True
 
     async def signal(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
-            signal_code: SignalCode = SignalCode.ps_ctrl_c,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
+        signal_code: SignalCode = SignalCode.ps_ctrl_c,
     ):
         winrs = self._runspace_table[pool.runspace_id]
 
@@ -1082,24 +1082,25 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         winrs.receive_data(resp)
 
     async def connect(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
-        rsp = NAMESPACES['rsp']
-        connect = ElementTree.Element('{%s}Connect' % rsp)
+        rsp = NAMESPACES["rsp"]
+        connect = ElementTree.Element("{%s}Connect" % rsp)
         if pipeline_id:
-            connect.attrib['CommandId'] = pipeline_id
+            connect.attrib["CommandId"] = pipeline_id
             options = None
 
         else:
             payload = self.next_payload(pool)
 
             options = OptionSet()
-            options.add_option('protocolversion', pool.our_capability.protocolversion, {'MustComply': 'true'})
+            options.add_option("protocolversion", pool.our_capability.protocolversion, {"MustComply": "true"})
 
-            open_content = ElementTree.SubElement(connect, 'connectXml',
-                                                  xmlns='http://schemas.microsoft.com/powershell')
+            open_content = ElementTree.SubElement(
+                connect, "connectXml", xmlns="http://schemas.microsoft.com/powershell"
+            )
             open_content.text = base64.b64encode(payload.data).decode()
 
         winrs = self._runspace_table[pool.runspace_id]
@@ -1108,7 +1109,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         event = winrs.wsman.receive_data(resp)
 
         if not pipeline_id:
-            response_xml = event.body.find('rsp:ConnectResponse/pwsh:connectResponseXml', NAMESPACES).text
+            response_xml = event.body.find("rsp:ConnectResponse/pwsh:connectResponseXml", NAMESPACES).text
 
             psrp_resp = PSRPPayload(base64.b64decode(response_xml), StreamType.default, None)
             pool.receive_data(psrp_resp)
@@ -1116,30 +1117,30 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         await self._create_listener(pool, pipeline_id=pipeline_id)
 
     async def disconnect(
-            self,
-            pool: RunspacePool,
-            buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
-            idle_timeout: typing.Optional[typing.Union[int, float]] = None
+        self,
+        pool: RunspacePool,
+        buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
+        idle_timeout: typing.Optional[typing.Union[int, float]] = None,
     ):
         winrs = self._runspace_table[pool.runspace_id]
-        rsp = NAMESPACES['rsp']
+        rsp = NAMESPACES["rsp"]
 
-        disconnect = ElementTree.Element('{%s}Disconnect' % rsp)
+        disconnect = ElementTree.Element("{%s}Disconnect" % rsp)
         if buffer_mode != OutputBufferingMode.none:
-            buffer_mode_str = 'Block' if buffer_mode == OutputBufferingMode.block else 'Drop'
-            ElementTree.SubElement(disconnect, '{%s}BufferMode' % rsp).text = buffer_mode_str
+            buffer_mode_str = "Block" if buffer_mode == OutputBufferingMode.block else "Drop"
+            ElementTree.SubElement(disconnect, "{%s}BufferMode" % rsp).text = buffer_mode_str
 
         if idle_timeout:
-            idle_str = f'PT{idle_timeout}S'
-            ElementTree.SubElement(disconnect, '{%s}IdleTimeout' % rsp).text = idle_str
+            idle_str = f"PT{idle_timeout}S"
+            ElementTree.SubElement(disconnect, "{%s}IdleTimeout" % rsp).text = idle_str
 
         winrs.wsman.disconnect(winrs.resource_uri, disconnect, selector_set=winrs.selector_set)
         resp = await self._connection.send(winrs.data_to_send())
         winrs.receive_data(resp)
 
     async def reconnect(
-            self,
-            pool: RunspacePool,
+        self,
+        pool: RunspacePool,
     ):
         winrs = self._runspace_table[pool.runspace_id]
 
@@ -1154,7 +1155,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         shell_enumeration = winrs.receive_data(resp)
 
         for shell in shell_enumeration.shells:
-            shell.enumerate('http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command', shell.selector_set)
+            shell.enumerate("http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command", shell.selector_set)
             resp = await self._connection.send(winrs.data_to_send())
             cmd_enumeration = winrs.receive_data(resp)
 
@@ -1163,9 +1164,9 @@ class AsyncWSManInfo(AsyncConnectionInfo):
             yield shell.shell_id, cmd_enumeration.commands
 
     async def _create_listener(
-            self,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         started = asyncio.Event()
         task = asyncio_create_task(self._listen(started, pool, pipeline_id))
@@ -1173,16 +1174,16 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         await started.wait()
 
     async def _listen(
-            self,
-            started: asyncio.Event,
-            pool: RunspacePool,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        started: asyncio.Event,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[str] = None,
     ):
         winrs = self._runspace_table[pool.runspace_id]
 
         async with AsyncWSManConnection(*self._connection_args, **self._connection_kwargs) as conn:
             while True:
-                winrs.receive('stdout', command_id=pipeline_id)
+                winrs.receive("stdout", command_id=pipeline_id)
 
                 resp = await conn.send(winrs.data_to_send())
                 # TODO: Will the ReceiveResponse block if not all the fragments have been sent?
@@ -1199,7 +1200,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
                     # Received when the shell or pipeline has been closed
                     break
 
-                for psrp_data in event.get_streams().get('stdout', []):
+                for psrp_data in event.get_streams().get("stdout", []):
                     msg = PSRPPayload(psrp_data, StreamType.default, pipeline_id)
                     await self.queue_response(pool.runspace_id, msg)
 
@@ -1212,13 +1213,11 @@ class AsyncWSManInfo(AsyncConnectionInfo):
                 await self.queue_response(pool.runspace_id, None)
 
 
-_EMPTY_UUID = '00000000-0000-0000-0000-000000000000'
+_EMPTY_UUID = "00000000-0000-0000-0000-000000000000"
 
 
 def _ps_data_packet(
-        data: bytes,
-        stream_type: StreamType = StreamType.default,
-        ps_guid: typing.Optional[str] = None
+    data: bytes, stream_type: StreamType = StreamType.default, ps_guid: typing.Optional[str] = None
 ) -> bytes:
     """Data packet for PSRP fragments
 
@@ -1235,13 +1234,13 @@ def _ps_data_packet(
         bytes: The encoded data XML packet.
     """
     ps_guid = ps_guid or _EMPTY_UUID
-    stream_name = b'Default' if stream_type == StreamType.default else b'PromptResponse'
+    stream_name = b"Default" if stream_type == StreamType.default else b"PromptResponse"
     return b"<Data Stream='%s' PSGuid='%s'>%s</Data>\n" % (stream_name, ps_guid.encode(), base64.b64encode(data))
 
 
 def _ps_guid_packet(
-        element: str,
-        ps_guid: typing.Optional[str] = None,
+    element: str,
+    ps_guid: typing.Optional[str] = None,
 ) -> bytes:
     """Common PSGuid packet for PSRP message.
 

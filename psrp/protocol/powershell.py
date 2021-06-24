@@ -145,6 +145,7 @@ class StreamType(enum.Enum):
     It is up to the connection to interpret these options and convey the
     priority to the peer in the proper fashion.
     """
+
     default = enum.auto()  #: The default type used for the majority of PSRP messages.
     prompt_response = enum.auto()  #: Used for host call/responses PSRP messages.
 
@@ -162,14 +163,15 @@ class PSRPMessage:
         object_id: The data fragment object id.
         stream_type: The StreamType associated with the message.
     """
+
     def __init__(
-            self,
-            message_type: PSRPMessageType,
-            data: bytearray,
-            runspace_pool_id: str,
-            pipeline_id: typing.Optional[str],
-            object_id: int,
-            stream_type: StreamType = StreamType.default,
+        self,
+        message_type: PSRPMessageType,
+        data: bytearray,
+        runspace_pool_id: str,
+        pipeline_id: typing.Optional[str],
+        object_id: int,
+        stream_type: StreamType = StreamType.default,
     ):
         self.message_type: PSRPMessageType = message_type
         self.runspace_pool_id = runspace_pool_id
@@ -184,23 +186,23 @@ class PSRPMessage:
 
     @property
     def data(self) -> bytes:
-        """ The internal buffer as a byte string. """
+        """The internal buffer as a byte string."""
         return bytes(self._data)
 
     @property
     def fragment_counter(
-            self,
+        self,
     ) -> int:
-        """ Get the next fragment ID for the message fragments. """
+        """Get the next fragment ID for the message fragments."""
         fragment_id = self._fragment_counter
         self._fragment_counter += 1
         return fragment_id
 
     def fragment(
-            self,
-            length: int,
+        self,
+        length: int,
     ) -> bytes:
-        """ Create a fragment with a maximum length. """
+        """Create a fragment with a maximum length."""
         data = self._data[:length]
         self._data = self._data[length:]
         fragment_id = self.fragment_counter
@@ -209,25 +211,25 @@ class PSRPMessage:
         return _create_fragment(self.object_id, fragment_id, data, end)
 
 
-Fragment = collections.namedtuple('Fragment', ['object_id', 'fragment_id', 'start', 'end', 'data'])
-Message = collections.namedtuple('Message', ['destination', 'message_type', 'rpid', 'pid', 'data'])
-PSRPPayload = collections.namedtuple('PSRPPayload', ['data', 'stream_type', 'pipeline_id'])
+Fragment = collections.namedtuple("Fragment", ["object_id", "fragment_id", "start", "end", "data"])
+Message = collections.namedtuple("Message", ["destination", "message_type", "rpid", "pid", "data"])
+PSRPPayload = collections.namedtuple("PSRPPayload", ["data", "stream_type", "pipeline_id"])
 
-_EMPTY_UUID = '00000000-0000-0000-0000-000000000000'
+_EMPTY_UUID = "00000000-0000-0000-0000-000000000000"
 
 _DEFAULT_CAPABILITY = SessionCapability(
-    PSVersion=PSVersion('2.0'),
-    protocolversion=PSVersion('2.3'),
-    SerializationVersion=PSVersion('1.1.0.1'),
+    PSVersion=PSVersion("2.0"),
+    protocolversion=PSVersion("2.3"),
+    SerializationVersion=PSVersion("1.1.0.1"),
 )
 
 
 def _create_message(
-        client: bool,
-        message_type: PSRPMessageType,
-        data: bytes,
-        runspace_pool_id: str,
-        pipeline_id: typing.Optional[str] = None,
+    client: bool,
+    message_type: PSRPMessageType,
+    data: bytes,
+    runspace_pool_id: str,
+    pipeline_id: typing.Optional[str] = None,
 ) -> bytearray:
     """Create a PSRP message.
 
@@ -248,21 +250,25 @@ def _create_message(
     rpid = uuid.UUID(runspace_pool_id)
     pid = uuid.UUID(pipeline_id or _EMPTY_UUID)
 
-    return bytearray(b''.join([
-        struct.pack('<i', destination),
-        struct.pack('<I', message_type.value),
-        # .NET serializes uuids/guids in bytes in the little endian form.
-        rpid.bytes_le,
-        pid.bytes_le,
-        data,
-    ]))
+    return bytearray(
+        b"".join(
+            [
+                struct.pack("<i", destination),
+                struct.pack("<I", message_type.value),
+                # .NET serializes uuids/guids in bytes in the little endian form.
+                rpid.bytes_le,
+                pid.bytes_le,
+                data,
+            ]
+        )
+    )
 
 
 def _create_fragment(
-        object_id: int,
-        fragment_id: int,
-        data: bytes,
-        end: bool = True,
+    object_id: int,
+    fragment_id: int,
+    data: bytes,
+    end: bool = True,
 ) -> bytes:
     """Create a PSRP fragment.
 
@@ -286,19 +292,21 @@ def _create_fragment(
     if end:
         start_end_byte |= 0x2
 
-    return b''.join([
-        struct.pack(">Q", object_id),
-        struct.pack(">Q", fragment_id),
-        struct.pack("B", start_end_byte),
-        struct.pack(">I", len(data)),
-        data,
-    ])
+    return b"".join(
+        [
+            struct.pack(">Q", object_id),
+            struct.pack(">Q", fragment_id),
+            struct.pack("B", start_end_byte),
+            struct.pack(">I", len(data)),
+            data,
+        ]
+    )
 
 
 def _unpack_message(
-        data: bytearray,
+    data: bytearray,
 ) -> Message:
-    """ Unpack a PSRP message into a structured format. """
+    """Unpack a PSRP message into a structured format."""
     destination = struct.unpack("<I", data[0:4])[0]
     message_type = PSRPMessageType(struct.unpack("<I", data[4:8])[0])
     rpid = str(uuid.UUID(bytes_le=bytes(data[8:24]))).upper()
@@ -317,9 +325,9 @@ def _unpack_message(
 
 
 def _unpack_fragment(
-        data: bytearray,
+    data: bytearray,
 ) -> Fragment:
-    """ Unpack a PSRP fragment into a structured format. """
+    """Unpack a PSRP fragment into a structured format."""
     object_id = struct.unpack(">Q", data[0:8])[0]
     fragment_id = struct.unpack(">Q", data[8:16])[0]
     start_end_byte = struct.unpack("B", data[16:17])[0]
@@ -327,11 +335,11 @@ def _unpack_fragment(
     end = start_end_byte & 0x2 == 0x2
     length = struct.unpack(">I", data[17:21])[0]
 
-    return Fragment(object_id, fragment_id, start, end, data[21:length + 21])
+    return Fragment(object_id, fragment_id, start, end, data[21 : length + 21])
 
 
 def _dict_to_psobject(**kwargs) -> PSObject:
-    """ Builds a PSObject with note properties set by the kwargs. """
+    """Builds a PSObject with note properties set by the kwargs."""
     obj = PSObject()
     for key, value in kwargs.items():
         add_note_property(obj, key, value)
@@ -340,10 +348,10 @@ def _dict_to_psobject(**kwargs) -> PSObject:
 
 
 def state_check(
-        action: typing.Optional[str] = None,
-        require_states: typing.Optional[typing.List[typing.Union[PSInvocationState, RunspacePoolState]]] = None,
-        require_version: typing.Optional[PSVersion] = None,
-        skip_states: typing.Optional[typing.List[typing.Union[PSInvocationState, RunspacePoolState]]] = None,
+    action: typing.Optional[str] = None,
+    require_states: typing.Optional[typing.List[typing.Union[PSInvocationState, RunspacePoolState]]] = None,
+    require_version: typing.Optional[PSVersion] = None,
+    skip_states: typing.Optional[typing.List[typing.Union[PSInvocationState, RunspacePoolState]]] = None,
 ):
     """Checks the state before running a function.
 
@@ -357,12 +365,9 @@ def state_check(
         skip_states: A list of states that define whether the function is skipped if the Runspace Pool or Pipeline
             state is in.
     """
+
     def decorator(func):
-        def wrapper(
-                self: typing.Union['_RunspacePoolBase', '_PipelineBase'],
-                *args,
-                **kwargs
-        ):
+        def wrapper(self: typing.Union["_RunspacePoolBase", "_PipelineBase"], *args, **kwargs):
             action_desc = action or func.__name__
             current_state = self.state
 
@@ -381,12 +386,14 @@ def state_check(
                 raise state_exp(action_desc, current_state, require_states)
 
             their_capability = runspace.their_capability
-            current_version = getattr(their_capability, 'protocolversion', require_version)
+            current_version = getattr(their_capability, "protocolversion", require_version)
             if require_version is not None and current_version < require_version:
                 raise InvalidProtocolVersion(action_desc, current_version, require_version)
 
             return func(self, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -419,17 +426,19 @@ class _RunspacePoolBase:
 
     def __new__(cls, *args, **kwargs):
         if cls in [_RunspacePoolBase]:
-            raise TypeError(f'Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for '
-                            f'Runspace Pool types.')
+            raise TypeError(
+                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
+                f"Runspace Pool types."
+            )
 
         return super().__new__(cls)
 
     def __init__(
-            self,
-            runspace_id: str,
-            capability: SessionCapability,
-            application_arguments: typing.Dict,
-            application_private_data: typing.Dict,
+        self,
+        runspace_id: str,
+        capability: SessionCapability,
+        application_arguments: typing.Dict,
+        application_private_data: typing.Dict,
     ):
         self.host: typing.Optional[HostInfo] = None
         self.runspace_id = runspace_id.upper()
@@ -455,39 +464,39 @@ class _RunspacePoolBase:
 
     @property
     def max_runspaces(
-            self,
+        self,
     ) -> int:
-        """ The maximum number of runspaces the pool maintains. """
+        """The maximum number of runspaces the pool maintains."""
         return self._max_runspaces
 
     @property
     def min_runspaces(
-            self,
+        self,
     ) -> int:
-        """ The minimum number of runspaces the pool maintains. """
+        """The minimum number of runspaces the pool maintains."""
         return self._min_runspaces
 
     @property
     def _ci_counter(
-            self,
+        self,
     ) -> int:
-        """ Counter used for ci calls. """
+        """Counter used for ci calls."""
         ci = self.__ci_counter
         self.__ci_counter += 1
         return ci
 
     @property
     def _fragment_counter(
-            self,
+        self,
     ) -> int:
-        """ Counter used for fragment object IDs. """
+        """Counter used for fragment object IDs."""
         count = self.__fragment_counter
         self.__fragment_counter += 1
         return count
 
     def data_to_send(
-            self,
-            amount: typing.Optional[int] = None,
+        self,
+        amount: typing.Optional[int] = None,
     ) -> typing.Optional[PSRPPayload]:
         """Gets the next PSRP payload.
 
@@ -502,7 +511,7 @@ class _RunspacePoolBase:
              (typing.Optional[PSRPPayload]): The payload (if any) that needs to be sent to the peer.
         """
         if amount is not None and amount < 22:
-            raise ValueError('amount must be 22 or larger to fit a PSRP fragment')
+            raise ValueError("amount must be 22 or larger to fit a PSRP fragment")
 
         current_buffer = bytearray()
         stream_type = StreamType.default
@@ -534,16 +543,18 @@ class _RunspacePoolBase:
 
                 # Special edge case where we need to change the RunspacePool state when the last SessionCapability
                 # fragment was sent.
-                if self.state == RunspacePoolState.Opening and \
-                        message.message_type == PSRPMessageType.SessionCapability:
+                if (
+                    self.state == RunspacePoolState.Opening
+                    and message.message_type == PSRPMessageType.SessionCapability
+                ):
                     self.state = RunspacePoolState.NegotiationSent
 
         if current_buffer:
             return PSRPPayload(bytes(current_buffer), stream_type, pipeline_id)
 
     def receive_data(
-            self,
-            data: PSRPPayload,
+        self,
+        data: PSRPPayload,
     ):
         """Store any incoming data.
 
@@ -556,7 +567,7 @@ class _RunspacePoolBase:
         self._receive_buffer += data.data
 
     def next_event(
-            self,
+        self,
     ) -> typing.Optional[PSRPEvent]:
         """Process data received from the peer.
 
@@ -569,17 +580,18 @@ class _RunspacePoolBase:
         """
         while self._receive_buffer:
             fragment = _unpack_fragment(self._receive_buffer)
-            self._receive_buffer = self._receive_buffer[21 + len(fragment.data):]
+            self._receive_buffer = self._receive_buffer[21 + len(fragment.data) :]
 
             buffer = self._incoming_buffer.setdefault(fragment.object_id, [])
             if fragment.fragment_id != len(buffer):
-                raise PSRPError(f'Expecting fragment with a fragment id of {len(buffer)} not {fragment.fragment_id}')
+                raise PSRPError(f"Expecting fragment with a fragment id of {len(buffer)} not {fragment.fragment_id}")
             buffer.append(fragment.data)
 
             if fragment.end:
                 raw_message = _unpack_message(bytearray(b"".join(buffer)))
-                message = PSRPMessage(raw_message.message_type, raw_message.data, raw_message.rpid, raw_message.pid,
-                                      fragment.object_id)
+                message = PSRPMessage(
+                    raw_message.message_type, raw_message.data, raw_message.rpid, raw_message.pid, fragment.object_id
+                )
                 self._incoming_buffer[fragment.object_id] = message
 
         for object_id in list(self._incoming_buffer.keys()):
@@ -597,7 +609,7 @@ class _RunspacePoolBase:
         return
 
     @state_check(
-        'send PSRP message',
+        "send PSRP message",
         require_states=[
             RunspacePoolState.Connecting,
             RunspacePoolState.Opened,
@@ -607,17 +619,17 @@ class _RunspacePoolBase:
         ],
     )
     def prepare_message(
-            self,
-            message: PSObject,
-            message_type: typing.Optional[PSRPMessageType] = None,
-            pipeline_id: typing.Optional[str] = None,
-            stream_type: StreamType = StreamType.default
+        self,
+        message: PSObject,
+        message_type: typing.Optional[PSRPMessageType] = None,
+        pipeline_id: typing.Optional[str] = None,
+        stream_type: StreamType = StreamType.default,
     ):
-        """ Adds a PSRP message data action to the send buffer. """
+        """Adds a PSRP message data action to the send buffer."""
         if isinstance(message, EndOfPipelineInput):
             b_data = b""  # Special edge case for this particular message type
         else:
-            b_data = ElementTree.tostring(serialize(message, cipher=self._cipher), encoding='utf-8', method='xml')
+            b_data = ElementTree.tostring(serialize(message, cipher=self._cipher), encoding="utf-8", method="xml")
 
         if message_type is None:
             message_type = PSRPMessageType(message.PSObject.psrp_message_type)
@@ -630,18 +642,18 @@ class _RunspacePoolBase:
         self._send_buffer.append(psrp_message)
 
     def process_SessionCapability(
-            self,
-            event: SessionCapabilityEvent,
+        self,
+        event: SessionCapabilityEvent,
     ):
         # TODO: Verify the versions
         self.their_capability = event.ps_object
         self.state = RunspacePoolState.NegotiationSucceeded
 
     def _process_message(
-            self,
-            message: PSRPMessage,
+        self,
+        message: PSRPMessage,
     ) -> PSRPEvent:
-        """ Process a TransportDataAction data message received from a peer. """
+        """Process a TransportDataAction data message received from a peer."""
         if not message.data:
             # Special edge case for EndOfPipelineInput which has no data.
             ps_object = None
@@ -651,13 +663,13 @@ class _RunspacePoolBase:
 
         event = PSRPEvent(message.message_type, ps_object, message.runspace_pool_id, message.pipeline_id)
 
-        process_func = getattr(self, f'process_{message.message_type.name}', None)
+        process_func = getattr(self, f"process_{message.message_type.name}", None)
         if process_func:
             process_func(event)
 
         else:
             # TODO: Convert to a warning
-            print(f'Received unknown message {message.message_type!s}')
+            print(f"Received unknown message {message.message_type!s}")
 
         return event
 
@@ -689,15 +701,16 @@ class RunspacePool(_RunspacePoolBase):
     .. _Sans-IO model:
         https://sans-io.readthedocs.io/
     """
+
     def __init__(
-            self,
-            application_arguments: typing.Optional[typing.Dict] = None,
-            apartment_state: ApartmentState = ApartmentState.Unknown,
-            host: typing.Optional[HostInfo] = None,
-            thread_options: PSThreadOptions = PSThreadOptions.Default,
-            min_runspaces: int = 1,
-            max_runspaces: int = 1,
-            runspace_pool_id: typing.Optional[str] = None,
+        self,
+        application_arguments: typing.Optional[typing.Dict] = None,
+        apartment_state: ApartmentState = ApartmentState.Unknown,
+        host: typing.Optional[HostInfo] = None,
+        thread_options: PSThreadOptions = PSThreadOptions.Default,
+        min_runspaces: int = 1,
+        max_runspaces: int = 1,
+        runspace_pool_id: typing.Optional[str] = None,
     ):
         super().__init__(
             runspace_pool_id or str(uuid.uuid4()),
@@ -712,7 +725,7 @@ class RunspacePool(_RunspacePoolBase):
         self._max_runspaces = max_runspaces
 
     @state_check(
-        'connect to Runspace Pool',
+        "connect to Runspace Pool",
         require_states=[RunspacePoolState.Disconnected],
         skip_states=[RunspacePoolState.Opened],
     )
@@ -733,11 +746,11 @@ class RunspacePool(_RunspacePoolBase):
         still running.
         """
         if self.pipeline_table:
-            raise PSRPError('Must close these pipelines first')
+            raise PSRPError("Must close these pipelines first")
         self.state = RunspacePoolState.Closing
 
     @state_check(
-        'get available Runspaces',
+        "get available Runspaces",
         require_states=[RunspacePoolState.Opened],
     )
     def get_available_runspaces(self) -> int:
@@ -754,7 +767,7 @@ class RunspacePool(_RunspacePoolBase):
         return ci
 
     @state_check(
-        'open Runspace Pool',
+        "open Runspace Pool",
         require_states=[RunspacePoolState.BeforeOpen],
         skip_states=[RunspacePoolState.Opened],
     )
@@ -779,7 +792,7 @@ class RunspacePool(_RunspacePoolBase):
         self.prepare_message(init_runspace_pool)
 
     @state_check(
-        'start session key exchange',
+        "start session key exchange",
         require_states=[RunspacePoolState.Opened],
     )
     def exchange_key(self):
@@ -796,14 +809,14 @@ class RunspacePool(_RunspacePoolBase):
         self.prepare_message(PublicKey(PublicKey=b64_public_key))
 
     @state_check(
-        'response to host call',
+        "response to host call",
         require_states=[RunspacePoolState.Opened],
     )
     def host_response(
-            self,
-            ci: int,
-            return_value: typing.Optional[typing.Any] = None,
-            error_record: typing.Optional[ErrorRecord] = None,
+        self,
+        ci: int,
+        return_value: typing.Optional[typing.Any] = None,
+        error_record: typing.Optional[ErrorRecord] = None,
     ):
         """Respond to a host call.
 
@@ -831,9 +844,9 @@ class RunspacePool(_RunspacePoolBase):
         self.prepare_message(host_call, pipeline_id=pipeline_id, stream_type=StreamType.prompt_response)
 
     @state_check(
-        'reset Runspace Pool state',
+        "reset Runspace Pool state",
         require_states=[RunspacePoolState.Opened],
-        require_version=PSVersion('2.3'),
+        require_version=PSVersion("2.3"),
         skip_states=[RunspacePoolState.BeforeOpen],
     )
     def reset_runspace_state(self) -> int:
@@ -848,8 +861,8 @@ class RunspacePool(_RunspacePoolBase):
         return ci
 
     def set_max_runspaces(
-            self,
-            value: int,
+        self,
+        value: int,
     ) -> typing.Optional[int]:
         """Set the maximum number of runspaces.
 
@@ -864,14 +877,14 @@ class RunspacePool(_RunspacePoolBase):
             return
 
         ci = self._ci_counter
-        self._ci_table[ci] = lambda e: setattr(self, '_max_runspaces', value)
+        self._ci_table[ci] = lambda e: setattr(self, "_max_runspaces", value)
         self.prepare_message(SetMaxRunspaces(MaxRunspaces=value, ci=ci))
 
         return ci
 
     def set_min_runspaces(
-            self,
-            value: int,
+        self,
+        value: int,
     ) -> typing.Optional[int]:
         """Set the minimum number of runspaces.
 
@@ -886,59 +899,59 @@ class RunspacePool(_RunspacePoolBase):
             return
 
         ci = self._ci_counter
-        self._ci_table[ci] = lambda e: setattr(self, '_min_runspaces', value)
+        self._ci_table[ci] = lambda e: setattr(self, "_min_runspaces", value)
         self.prepare_message(SetMinRunspaces(MinRunspaces=value, ci=ci))
 
         return ci
 
     def process_ApplicationPrivateData(
-            self,
-            event: ApplicationPrivateDataEvent,
+        self,
+        event: ApplicationPrivateDataEvent,
     ):
         self.application_private_data = event.ps_object.ApplicationPrivateData
 
     def process_DebugRecord(
-            self,
-            event: DebugRecordEvent,
+        self,
+        event: DebugRecordEvent,
     ):
         pass
 
     def process_EncryptedSessionKey(
-            self,
-            event: EncryptedSessionKeyEvent,
+        self,
+        event: EncryptedSessionKeyEvent,
     ):
         encrypted_session_key = base64.b64decode(event.ps_object.EncryptedSessionKey)
         session_key = decrypt_session_key(self._exchange_key, encrypted_session_key)
         self._cipher = PSRemotingCrypto(session_key)
 
     def process_ErrorRecord(
-            self,
-            event: ErrorRecordEvent,
+        self,
+        event: ErrorRecordEvent,
     ):
         pass
 
     def process_InformationRecord(
-            self,
-            event: InformationRecordEvent,
+        self,
+        event: InformationRecordEvent,
     ):
         pass
 
     def process_PipelineHostCall(
-            self,
-            event: PipelineHostCallEvent,
+        self,
+        event: PipelineHostCallEvent,
     ):
         # Store the event for the host response to use.
         self._ci_table[event.ps_object.ci] = event
 
     def process_PipelineOutput(
-            self,
-            event: PipelineOutputEvent,
+        self,
+        event: PipelineOutputEvent,
     ):
         pass
 
     def process_PipelineState(
-            self,
-            event: PipelineStateEvent,
+        self,
+        event: PipelineStateEvent,
     ):
         pipeline = self.pipeline_table[event.pipeline_id]
         pipeline.state = event.state
@@ -947,69 +960,68 @@ class RunspacePool(_RunspacePoolBase):
             del self.pipeline_table[event.pipeline_id]
 
     def process_ProgressRecord(
-            self,
-            event: ProgressRecordEvent,
+        self,
+        event: ProgressRecordEvent,
     ):
         pass
 
     def process_PublicKeyRequest(
-            self,
-            event: PublicKeyRequestEvent,
+        self,
+        event: PublicKeyRequestEvent,
     ):
         self.exchange_key()
 
     def process_RunspaceAvailability(
-            self,
-            event: RunspaceAvailabilityEvent,
+        self,
+        event: RunspaceAvailabilityEvent,
     ):
         handler = self._ci_table.pop(int(event.ps_object.ci))
         if handler is not None:
             handler(event)
 
     def process_RunspacePoolHostCall(
-            self,
-            event: RunspacePoolHostCallEvent,
+        self,
+        event: RunspacePoolHostCallEvent,
     ):
         # Store the event for the host response to use.
         self._ci_table[int(event.ps_object.ci)] = event
 
     def process_RunspacePoolInitData(
-            self,
-            event: RunspacePoolInitDataEvent,
+        self,
+        event: RunspacePoolInitDataEvent,
     ):
         self._min_runspaces = event.ps_object.MinRunspaces
         self._max_runspaces = event.ps_object.MaxRunspaces
 
     def process_RunspacePoolState(
-            self,
-            event: RunspacePoolStateEvent,
+        self,
+        event: RunspacePoolStateEvent,
     ):
         self.state = event.state
 
     def process_UserEvent(
-            self,
-            event: UserEventEvent,
+        self,
+        event: UserEventEvent,
     ):
         pass
 
     def process_VerboseRecord(
-            self,
-            event: VerboseRecordEvent,
+        self,
+        event: VerboseRecordEvent,
     ):
         pass
 
     def process_WarningRecord(
-            self,
-            event: WarningRecordEvent,
+        self,
+        event: WarningRecordEvent,
     ):
         pass
 
 
 class ServerRunspacePool(_RunspacePoolBase):
-
     def __init__(
-            self,
-            application_private_data: typing.Optional[typing.Dict] = None,
+        self,
+        application_private_data: typing.Optional[typing.Dict] = None,
     ):
         super().__init__(
             _EMPTY_UUID,
@@ -1019,18 +1031,18 @@ class ServerRunspacePool(_RunspacePoolBase):
         )
 
     @state_check(
-        'generate Runspace Pool event',
+        "generate Runspace Pool event",
         require_states=[RunspacePoolState.Opened],
     )
     def format_event(
-            self,
-            event_identifier: typing.Union[PSInt, int],
-            source_identifier: typing.Union[PSString, str],
-            sender: typing.Any = None,
-            source_args: typing.Optional[typing.List[typing.Any]] = None,
-            message_data: typing.Any = None,
-            time_generated: typing.Optional[typing.Union[PSDateTime, datetime.datetime]] = None,
-            computer: typing.Optional[typing.Union[PSString, str]] = None,
+        self,
+        event_identifier: typing.Union[PSInt, int],
+        source_identifier: typing.Union[PSString, str],
+        sender: typing.Any = None,
+        source_args: typing.Optional[typing.List[typing.Any]] = None,
+        message_data: typing.Any = None,
+        time_generated: typing.Optional[typing.Union[PSDateTime, datetime.datetime]] = None,
+        computer: typing.Optional[typing.Union[PSString, str]] = None,
     ):
         """Send event to client.
 
@@ -1052,26 +1064,28 @@ class ServerRunspacePool(_RunspacePoolBase):
         time_generated = PSDateTime.now() if time_generated is None else time_generated
         computer = platform.node() if computer is None else computer
 
-        self.prepare_message(UserEvent(
-            EventIdentifier=PSInt(event_identifier),
-            SourceIdentifier=PSString(source_identifier),
-            TimeGenerated=time_generated,
-            Sender=sender,
-            SourceArgs=source_args or [],
-            MessageData=message_data,
-            ComputerName=computer,
-            RunspaceId=PSGuid(self.runspace_id),
-        ))
+        self.prepare_message(
+            UserEvent(
+                EventIdentifier=PSInt(event_identifier),
+                SourceIdentifier=PSString(source_identifier),
+                TimeGenerated=time_generated,
+                Sender=sender,
+                SourceArgs=source_args or [],
+                MessageData=message_data,
+                ComputerName=computer,
+                RunspaceId=PSGuid(self.runspace_id),
+            )
+        )
 
     @state_check(
-        'create host call',
+        "create host call",
         require_states=[RunspacePoolState.Opened],
     )
     def host_call(
-            self,
-            method: HostMethodIdentifier,
-            parameters: typing.Optional[typing.List] = None,
-            pipeline_id: typing.Optional[str] = None,
+        self,
+        method: HostMethodIdentifier,
+        parameters: typing.Optional[typing.List] = None,
+        pipeline_id: typing.Optional[str] = None,
     ) -> int:
         ci = self._ci_counter
 
@@ -1086,7 +1100,7 @@ class ServerRunspacePool(_RunspacePoolBase):
         return ci
 
     @state_check(
-        'request exchange key',
+        "request exchange key",
         require_states=[RunspacePoolState.Opened],
     )
     def request_key(self):
@@ -1095,23 +1109,25 @@ class ServerRunspacePool(_RunspacePoolBase):
         self.prepare_message(PublicKeyRequest())
 
     def process_ConnectRunspacePool(
-            self,
-            event: ConnectRunspacePoolEvent,
+        self,
+        event: ConnectRunspacePoolEvent,
     ):
         # TODO: Handle <S></S> ConnectRunspacePool object
         self._max_runspaces = event.ps_object.MaxRunspaces
         self._min_runspaces = event.ps_object.MinRunspaces
 
-        self.prepare_message(RunspacePoolInitData(
-            MinRunspaces=self.min_runspaces,
-            MaxRunspaces=self.max_runspaces,
-        ))
+        self.prepare_message(
+            RunspacePoolInitData(
+                MinRunspaces=self.min_runspaces,
+                MaxRunspaces=self.max_runspaces,
+            )
+        )
 
         self.prepare_message(ApplicationPrivateData(ApplicationPrivateData=self.application_private_data))
 
     def process_CreatePipeline(
-            self,
-            event: CreatePipelineEvent,
+        self,
+        event: CreatePipelineEvent,
     ):
         create_pipeline = event.ps_object
         powershell = create_pipeline.PowerShell
@@ -1129,7 +1145,7 @@ class ServerRunspacePool(_RunspacePoolBase):
             redirect_shell_error_to_out=powershell.RedirectShellErrorOutputPipe,
         )
         commands = [powershell.Cmds]
-        commands.extend([c.Cmds for c in getattr(powershell, 'ExtraCmds', [])])
+        commands.extend([c.Cmds for c in getattr(powershell, "ExtraCmds", [])])
 
         for statements in commands:
             for raw_cmd in statements:
@@ -1141,24 +1157,26 @@ class ServerRunspacePool(_RunspacePoolBase):
         event.pipeline = pipeline
 
     def process_EndOfPipelineInput(
-            self,
-            event: EndOfPipelineInputEvent,
+        self,
+        event: EndOfPipelineInputEvent,
     ):
         pass
 
     def process_GetAvailableRunspaces(
-            self,
-            event: GetAvailableRunspacesEvent,
+        self,
+        event: GetAvailableRunspacesEvent,
     ):
         # TODO: This should reflect the available runspaces and not the max.
-        self.prepare_message(RunspaceAvailability(
-            SetMinMaxRunspacesResponse=self.max_runspaces,
-            ci=event.ps_object.ci,
-        ))
+        self.prepare_message(
+            RunspaceAvailability(
+                SetMinMaxRunspacesResponse=self.max_runspaces,
+                ci=event.ps_object.ci,
+            )
+        )
 
     def process_GetCommandMetadata(
-            self,
-            event: GetCommandMetadataEvent,
+        self,
+        event: GetCommandMetadataEvent,
     ):
         get_meta = event.ps_object
         pipeline = ServerGetCommandMetadata(
@@ -1172,8 +1190,8 @@ class ServerRunspacePool(_RunspacePoolBase):
         event.pipeline = pipeline
 
     def process_InitRunspacePool(
-            self,
-            event: InitRunspacePoolEvent,
+        self,
+        event: InitRunspacePoolEvent,
     ):
         self.apartment_state = event.ps_object.ApartmentState
         self.application_arguments = event.ps_object.ApplicationArguments
@@ -1187,20 +1205,20 @@ class ServerRunspacePool(_RunspacePoolBase):
         self.prepare_message(RunspacePoolStateMsg(RunspaceState=int(self.state)))
 
     def process_PipelineHostResponse(
-            self,
-            event: PipelineHostResponseEvent,
+        self,
+        event: PipelineHostResponseEvent,
     ):
         pass
 
     def process_PipelineInput(
-            self,
-            event: PipelineInputEvent,
+        self,
+        event: PipelineInputEvent,
     ):
         pass
 
     def process_PublicKey(
-            self,
-            event: PublicKeyEvent,
+        self,
+        event: PublicKeyEvent,
     ):
         session_key = os.urandom(32)
         self._cipher = PSRemotingCrypto(session_key)
@@ -1214,20 +1232,20 @@ class ServerRunspacePool(_RunspacePoolBase):
         self.prepare_message(msg)
 
     def process_ResetRunspaceState(
-            self,
-            event: ResetRunspaceStateEvent,
+        self,
+        event: ResetRunspaceStateEvent,
     ):
         pass
 
     def process_RunspacePoolHostResponse(
-            self,
-            event: RunspacePoolHostResponseEvent,
+        self,
+        event: RunspacePoolHostResponseEvent,
     ):
         pass
 
     def process_SessionCapability(
-            self,
-            event: SessionCapabilityEvent,
+        self,
+        event: SessionCapabilityEvent,
     ):
         super().process_SessionCapability(event)
         self.prepare_message(self.our_capability)
@@ -1236,42 +1254,47 @@ class ServerRunspacePool(_RunspacePoolBase):
         self.runspace_id = event.runspace_pool_id
 
     def process_SetMaxRunspaces(
-            self,
-            event: SetMaxRunspacesEvent,
+        self,
+        event: SetMaxRunspacesEvent,
     ):
         self._max_runspaces = event.ps_object.MaxRunspaces
-        self.prepare_message(RunspaceAvailability(
-            SetMinMaxRunspacesResponse=True,
-            ci=event.ps_object.ci,
-        ))
+        self.prepare_message(
+            RunspaceAvailability(
+                SetMinMaxRunspacesResponse=True,
+                ci=event.ps_object.ci,
+            )
+        )
 
     def process_SetMinRunspaces(
-            self,
-            event: SetMinRunspacesEvent,
+        self,
+        event: SetMinRunspacesEvent,
     ):
         self._min_runspaces = event.ps_object.MinRunspaces
-        self.prepare_message(RunspaceAvailability(
-            SetMinMaxRunspacesResponse=True,
-            ci=event.ps_object.ci,
-        ))
+        self.prepare_message(
+            RunspaceAvailability(
+                SetMinMaxRunspacesResponse=True,
+                ci=event.ps_object.ci,
+            )
+        )
 
 
-RunspacePoolType = typing.TypeVar('RunspacePoolType', bound=_RunspacePoolBase)
+RunspacePoolType = typing.TypeVar("RunspacePoolType", bound=_RunspacePoolBase)
 
 
 class _PipelineBase(typing.Generic[RunspacePoolType]):
-
     def __new__(cls, *args, **kwargs):
         if cls in [_PipelineBase, _ClientPipeline, _ServerPipeline, GetCommandMetadataPipeline, PowerShell]:
-            raise TypeError(f'Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for '
-                            f'client/server pipeline types.')
+            raise TypeError(
+                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
+                f"client/server pipeline types."
+            )
 
         return super().__new__(cls)
 
     def __init__(
-            self,
-            runspace_pool: RunspacePoolType,
-            pipeline_id: str,
+        self,
+        runspace_pool: RunspacePoolType,
+        pipeline_id: str,
     ):
         self.runspace_pool = runspace_pool
         self.state = PSInvocationState.NotStarted
@@ -1282,20 +1305,20 @@ class _PipelineBase(typing.Generic[RunspacePoolType]):
         del self.runspace_pool.pipeline_table[self.pipeline_id]
 
     def prepare_message(
-            self,
-            message: PSObject,
-            message_type: typing.Optional[PSRPMessageType] = None,
-            stream_type: StreamType = StreamType.default
+        self,
+        message: PSObject,
+        message_type: typing.Optional[PSRPMessageType] = None,
+        stream_type: StreamType = StreamType.default,
     ):
-        self.runspace_pool.prepare_message(message, message_type=message_type, pipeline_id=self.pipeline_id,
-                                           stream_type=stream_type)
+        self.runspace_pool.prepare_message(
+            message, message_type=message_type, pipeline_id=self.pipeline_id, stream_type=stream_type
+        )
 
 
 class _ClientPipeline(_PipelineBase[RunspacePool]):
-
     def __init__(
-            self,
-            runspace_pool: RunspacePool,
+        self,
+        runspace_pool: RunspacePool,
     ):
         super().__init__(runspace_pool, str(uuid.uuid4()))
 
@@ -1304,8 +1327,8 @@ class _ClientPipeline(_PipelineBase[RunspacePool]):
         self.state = PSInvocationState.Running
 
     def send(
-            self,
-            data: typing.Any,
+        self,
+        data: typing.Any,
     ):
         self.prepare_message(data, message_type=PSRPMessageType.PipelineInput)
 
@@ -1313,14 +1336,14 @@ class _ClientPipeline(_PipelineBase[RunspacePool]):
         self.prepare_message(EndOfPipelineInput())
 
     @state_check(
-        'response to pipeline host call',
+        "response to pipeline host call",
         require_states=[PSInvocationState.Running],
     )
     def host_response(
-            self,
-            ci: int,
-            return_value: typing.Optional[typing.Any] = None,
-            error_record: typing.Optional[ErrorRecord] = None,
+        self,
+        ci: int,
+        return_value: typing.Optional[typing.Any] = None,
+        error_record: typing.Optional[ErrorRecord] = None,
     ):
         """Respond to a host call.
 
@@ -1338,9 +1361,8 @@ class _ClientPipeline(_PipelineBase[RunspacePool]):
 
 
 class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
-
     @state_check(
-        'starting pipeline',
+        "starting pipeline",
         require_states=[PSInvocationState.NotStarted],
         skip_states=[PSInvocationState.Running],
     )
@@ -1348,7 +1370,7 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.state = PSInvocationState.Running
 
     @state_check(
-        'closing pipeline',
+        "closing pipeline",
         skip_states=[PSInvocationState.Stopped],
     )
     def close(self):
@@ -1357,7 +1379,7 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self._send_state()
 
     @state_check(
-        'closing pipeline',
+        "closing pipeline",
         require_states=[PSInvocationState.Running],
         skip_states=[PSInvocationState.Stopping, PSInvocationState.Stopped],
     )
@@ -1365,44 +1387,46 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.state = PSInvocationState.Stopped
 
         exception = NETException(
-            Message='The pipeline has been stopped.',
+            Message="The pipeline has been stopped.",
             HResult=-2146233087,
         )
-        exception.PSTypeNames.extend([
-            'System.Management.Automation.PipelineStoppedException',
-            'System.Management.Automation.RuntimeException',
-            'System.SystemException',
-        ])
+        exception.PSTypeNames.extend(
+            [
+                "System.Management.Automation.PipelineStoppedException",
+                "System.Management.Automation.RuntimeException",
+                "System.SystemException",
+            ]
+        )
 
         stopped_error = ErrorRecord(
             Exception=exception,
             CategoryInfo=ErrorCategoryInfo(
                 Category=ErrorCategory.OperationStopped,
-                Reason='PipelineStoppedException',
+                Reason="PipelineStoppedException",
             ),
-            FullyQualifiedErrorId='PipelineStopped',
+            FullyQualifiedErrorId="PipelineStopped",
         )
         self._send_state(stopped_error)
         super().close()
 
     @state_check(
-        'making pipeline host call',
+        "making pipeline host call",
         require_states=[PSInvocationState.Running],
     )
     def host_call(
-            self,
-            method: HostMethodIdentifier,
-            parameters: typing.Optional[typing.List] = None,
+        self,
+        method: HostMethodIdentifier,
+        parameters: typing.Optional[typing.List] = None,
     ) -> int:
         return self.runspace_pool.host_call(method, parameters, self.pipeline_id)
 
     @state_check(
-        'writing output record',
+        "writing output record",
         require_states=[PSInvocationState.Running],
     )
     def write_output(
-            self,
-            value: typing.Any,
+        self,
+        value: typing.Any,
     ):
         """Write object.
 
@@ -1414,20 +1438,20 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.prepare_message(value, message_type=PSRPMessageType.PipelineOutput)
 
     @state_check(
-        'writing error record',
+        "writing error record",
         require_states=[PSInvocationState.Running],
     )
     def write_error(
-            self,
-            exception: NETException,
-            category_info: typing.Optional[ErrorCategoryInfo] = None,
-            target_object: typing.Any = None,
-            fully_qualified_error_id: typing.Optional[str] = None,
-            error_details: typing.Optional[ErrorDetails] = None,
-            invocation_info: typing.Optional[InvocationInfo] = None,
-            pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
-            script_stack_trace: typing.Optional[str] = None,
-            serialize_extended_info: bool = False,
+        self,
+        exception: NETException,
+        category_info: typing.Optional[ErrorCategoryInfo] = None,
+        target_object: typing.Any = None,
+        fully_qualified_error_id: typing.Optional[str] = None,
+        error_details: typing.Optional[ErrorDetails] = None,
+        invocation_info: typing.Optional[InvocationInfo] = None,
+        pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
+        script_stack_trace: typing.Optional[str] = None,
+        serialize_extended_info: bool = False,
     ):
         category_info = category_info or ErrorCategoryInfo()
 
@@ -1445,15 +1469,15 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.prepare_message(value, message_type=PSRPMessageType.ErrorRecord)
 
     @state_check(
-        'writing debug record',
+        "writing debug record",
         require_states=[PSInvocationState.Running],
     )
     def write_debug(
-            self,
-            message: typing.Union[str],
-            invocation_info: typing.Optional[InvocationInfo] = None,
-            pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
-            serialize_extended_info: bool = False,
+        self,
+        message: typing.Union[str],
+        invocation_info: typing.Optional[InvocationInfo] = None,
+        pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
+        serialize_extended_info: bool = False,
     ):
         value = InformationalRecord(
             Message=message,
@@ -1464,15 +1488,15 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.prepare_message(value, message_type=PSRPMessageType.DebugRecord)
 
     @state_check(
-        'writing verbose record',
+        "writing verbose record",
         require_states=[PSInvocationState.Running],
     )
     def write_verbose(
-            self,
-            message: typing.Union[str],
-            invocation_info: typing.Optional[InvocationInfo] = None,
-            pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
-            serialize_extended_info: bool = False,
+        self,
+        message: typing.Union[str],
+        invocation_info: typing.Optional[InvocationInfo] = None,
+        pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
+        serialize_extended_info: bool = False,
     ):
         value = InformationalRecord(
             Message=message,
@@ -1483,15 +1507,15 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.prepare_message(value, message_type=PSRPMessageType.VerboseRecord)
 
     @state_check(
-        'writing warning record',
+        "writing warning record",
         require_states=[PSInvocationState.Running],
     )
     def write_warning(
-            self,
-            message: typing.Union[str],
-            invocation_info: typing.Optional[InvocationInfo] = None,
-            pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
-            serialize_extended_info: bool = False,
+        self,
+        message: typing.Union[str],
+        invocation_info: typing.Optional[InvocationInfo] = None,
+        pipeline_iteration_info: typing.Optional[typing.List[typing.Union[PSInt, int]]] = None,
+        serialize_extended_info: bool = False,
     ):
         value = InformationalRecord(
             Message=message,
@@ -1502,19 +1526,19 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.prepare_message(value, message_type=PSRPMessageType.WarningRecord)
 
     @state_check(
-        'writing progress record',
+        "writing progress record",
         require_states=[PSInvocationState.Running],
     )
     def write_progress(
-            self,
-            activity: typing.Union[PSString, str],
-            activity_id: typing.Union[PSInt, int],
-            status_description: typing.Union[PSString, str],
-            current_operation: typing.Optional[typing.Union[PSString, str]] = None,
-            parent_activity_id: typing.Union[PSInt, int] = -1,
-            percent_complete: typing.Union[PSInt, int] = -1,
-            record_type: ProgressRecordType = ProgressRecordType.Processing,
-            seconds_remaining: typing.Union[PSInt, int] = -1,
+        self,
+        activity: typing.Union[PSString, str],
+        activity_id: typing.Union[PSInt, int],
+        status_description: typing.Union[PSString, str],
+        current_operation: typing.Optional[typing.Union[PSString, str]] = None,
+        parent_activity_id: typing.Union[PSInt, int] = -1,
+        percent_complete: typing.Union[PSInt, int] = -1,
+        record_type: ProgressRecordType = ProgressRecordType.Processing,
+        seconds_remaining: typing.Union[PSInt, int] = -1,
     ):
         """Write a progress record.
 
@@ -1553,21 +1577,21 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.prepare_message(value, message_type=PSRPMessageType.ProgressRecord)
 
     @state_check(
-        'writing information record',
+        "writing information record",
         require_states=[PSInvocationState.Running],
-        require_version=PSVersion('2.3'),
+        require_version=PSVersion("2.3"),
     )
     def write_information(
-            self,
-            message_data: typing.Any,
-            source: typing.Union[PSString, str],
-            time_generated: typing.Optional[typing.Union[PSDateTime, datetime.datetime]] = None,
-            tags: typing.Optional[PSList[PSString, str]] = None,
-            user: typing.Optional[typing.Union[PSString, str]] = None,
-            computer: typing.Optional[typing.Union[PSString, str]] = None,
-            process_id: typing.Optional[typing.Union[PSUInt, int]] = None,
-            native_thread_id: typing.Optional[typing.Union[PSUInt, int]] = None,
-            managed_thread_id: typing.Union[PSUInt, int] = None,
+        self,
+        message_data: typing.Any,
+        source: typing.Union[PSString, str],
+        time_generated: typing.Optional[typing.Union[PSDateTime, datetime.datetime]] = None,
+        tags: typing.Optional[PSList[PSString, str]] = None,
+        user: typing.Optional[typing.Union[PSString, str]] = None,
+        computer: typing.Optional[typing.Union[PSString, str]] = None,
+        process_id: typing.Optional[typing.Union[PSUInt, int]] = None,
+        native_thread_id: typing.Optional[typing.Union[PSUInt, int]] = None,
+        managed_thread_id: typing.Union[PSUInt, int] = None,
     ):
         """Write an information record.
 
@@ -1615,8 +1639,8 @@ class _ServerPipeline(_PipelineBase[ServerRunspacePool]):
         self.prepare_message(value, message_type=PSRPMessageType.InformationRecord)
 
     def _send_state(
-            self,
-            error_record: typing.Optional[ErrorRecord] = None,
+        self,
+        error_record: typing.Optional[ErrorRecord] = None,
     ):
         state = PipelineState(
             PipelineState=int(self.state),
@@ -1636,18 +1660,19 @@ class PowerShell(_PipelineBase):
         remote_stream_options: Whether to add invocation info the the PowerShell streams or not.
         redirect_shell_error_to_out: Redirects the global error output pipe to the commands error output pipe.
     """
+
     def __init__(
-            self,
-            add_to_history: bool = False,
-            apartment_state: typing.Optional[ApartmentState] = None,
-            history: typing.Optional[str] = None,
-            host: typing.Optional[HostInfo] = None,
-            is_nested: bool = False,
-            no_input: bool = True,
-            remote_stream_options: RemoteStreamOptions = RemoteStreamOptions.none,
-            redirect_shell_error_to_out: bool = True,
-            *args,
-            **kwargs
+        self,
+        add_to_history: bool = False,
+        apartment_state: typing.Optional[ApartmentState] = None,
+        history: typing.Optional[str] = None,
+        host: typing.Optional[HostInfo] = None,
+        is_nested: bool = False,
+        no_input: bool = True,
+        remote_stream_options: RemoteStreamOptions = RemoteStreamOptions.none,
+        redirect_shell_error_to_out: bool = True,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.add_to_history = add_to_history
@@ -1662,7 +1687,7 @@ class PowerShell(_PipelineBase):
 
     def to_psobject(self) -> CreatePipeline:
         if not self.commands:
-            raise ValueError('A command is required to invoke a PowerShell pipeline.')
+            raise ValueError("A command is required to invoke a PowerShell pipeline.")
 
         extra_cmds = [[]]
         for cmd in self.commands:
@@ -1675,16 +1700,16 @@ class PowerShell(_PipelineBase):
         # MS-PSRP 2.2.3.11 Pipeline
         # https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/82a8d1c6-4560-4e68-bfd0-a63c36d6a199
         pipeline_kwargs = {
-            'Cmds': cmds,
-            'IsNested': self.is_nested,
-            'History': self.history,
-            'RedirectShellErrorOutputPipe': self.redirect_shell_error_to_out,
+            "Cmds": cmds,
+            "IsNested": self.is_nested,
+            "History": self.history,
+            "RedirectShellErrorOutputPipe": self.redirect_shell_error_to_out,
         }
 
         if extra_cmds:
             # This isn't documented in MS-PSRP but this is how PowerShell batches multiple statements in 1 pipeline.
             # TODO: ExtraCmds may not work with protocol <=2.1.
-            pipeline_kwargs['ExtraCmds'] = [_dict_to_psobject(Cmds=s) for s in extra_cmds]
+            pipeline_kwargs["ExtraCmds"] = [_dict_to_psobject(Cmds=s) for s in extra_cmds]
 
         return CreatePipeline(
             NoInput=self.no_input,
@@ -1698,56 +1723,57 @@ class PowerShell(_PipelineBase):
 
 
 class ClientPowerShell(PowerShell, _ClientPipeline):
-
     def __init__(
-            self,
-            runspace_pool: RunspacePoolType,
-            *args,
-            **kwargs,
+        self,
+        runspace_pool: RunspacePoolType,
+        *args,
+        **kwargs,
     ):
         super().__init__(runspace_pool=runspace_pool, *args, **kwargs)
 
     def add_argument(
-            self,
-            value: typing.Any,
+        self,
+        value: typing.Any,
     ):
         self.add_parameter(None, value)
 
     def add_command(
-            self,
-            cmdlet: typing.Union[str, 'Command'],
-            use_local_scope: typing.Optional[bool] = None,
+        self,
+        cmdlet: typing.Union[str, "Command"],
+        use_local_scope: typing.Optional[bool] = None,
     ):
         if isinstance(cmdlet, str):
             cmdlet = Command(cmdlet, use_local_scope=use_local_scope)
 
         elif use_local_scope is not None:
-            raise TypeError('Cannot set use_local_scope with Command')
+            raise TypeError("Cannot set use_local_scope with Command")
 
         self.commands.append(cmdlet)
 
     def add_parameter(
-            self,
-            name: typing.Optional[str],
-            value: typing.Any = None,
+        self,
+        name: typing.Optional[str],
+        value: typing.Any = None,
     ):
         if not self.commands:
-            raise ValueError('A command is required to add a parameter/argument. A command must be added to the '
-                             'PowerShell instance first.')
+            raise ValueError(
+                "A command is required to add a parameter/argument. A command must be added to the "
+                "PowerShell instance first."
+            )
 
         self.commands[-1].parameters.append((name, value))
 
     def add_parameters(
-            self,
-            parameters: typing.Dict[str, typing.Any],
+        self,
+        parameters: typing.Dict[str, typing.Any],
     ):
         for name, value in parameters.items():
             self.add_parameter(name, value)
 
     def add_script(
-            self,
-            script: str,
-            use_local_scope: typing.Optional[bool] = None,
+        self,
+        script: str,
+        use_local_scope: typing.Optional[bool] = None,
     ):
         self.add_command(Command(script, True, use_local_scope=use_local_scope))
 
@@ -1759,27 +1785,25 @@ class ClientPowerShell(PowerShell, _ClientPipeline):
 
 
 class ServerPowerShell(PowerShell, _ServerPipeline):
-
     def __init__(
-            self,
-            runspace_pool: RunspacePoolType,
-            pipeline_id: str,
-            *args,
-            **kwargs,
+        self,
+        runspace_pool: RunspacePoolType,
+        pipeline_id: str,
+        *args,
+        **kwargs,
     ):
         super().__init__(runspace_pool=runspace_pool, pipeline_id=pipeline_id, *args, **kwargs)
 
 
 class GetCommandMetadataPipeline(_PipelineBase):
-
     def __init__(
-            self,
-            name: typing.Union[str, typing.List[str]],
-            command_type: CommandTypes = CommandTypes.All,
-            namespace: typing.Optional[typing.List[str]] = None,
-            arguments: typing.Optional[typing.List[str]] = None,
-            *args,
-            **kwargs
+        self,
+        name: typing.Union[str, typing.List[str]],
+        command_type: CommandTypes = CommandTypes.All,
+        namespace: typing.Optional[typing.List[str]] = None,
+        arguments: typing.Optional[typing.List[str]] = None,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
@@ -1800,76 +1824,75 @@ class GetCommandMetadataPipeline(_PipelineBase):
 
 
 class ClientGetCommandMetadata(GetCommandMetadataPipeline, _ClientPipeline):
-
     def __init__(
-            self,
-            runspace_pool: RunspacePoolType,
-            *args,
-            **kwargs,
+        self,
+        runspace_pool: RunspacePoolType,
+        *args,
+        **kwargs,
     ):
         super().__init__(runspace_pool=runspace_pool, *args, **kwargs)
 
 
 class ServerGetCommandMetadata(GetCommandMetadataPipeline, _ServerPipeline):
-
     def __init__(
-            self,
-            runspace_pool: RunspacePoolType,
-            pipeline_id: str,
-            *args,
-            **kwargs,
+        self,
+        runspace_pool: RunspacePoolType,
+        pipeline_id: str,
+        *args,
+        **kwargs,
     ):
         super().__init__(runspace_pool=runspace_pool, pipeline_id=pipeline_id, *args, **kwargs)
         self._count = None
         # TODO: Add support for writing other command info types.
 
     def write_count(
-            self,
-            count: typing.Union[PSInt, int],
+        self,
+        count: typing.Union[PSInt, int],
     ):
         self._count = count
         obj = PSCustomObject(
-            PSTypeName='Selected.Microsoft.PowerShell.Commands.GenericMeasureInfo',
+            PSTypeName="Selected.Microsoft.PowerShell.Commands.GenericMeasureInfo",
             Count=count,
         )
         self.write_output(obj)
 
     def write_cmdlet_info(
-            self,
-            name: typing.Union[PSString, str],
-            namespace: typing.Union[PSString, str],
-            help_uri: typing.Union[PSString, str] = '',
-            output_type: typing.Optional[typing.List[typing.Union[PSString, str]]] = None,
-            parameters: typing.Optional[typing.Dict[typing.Union[PSString, str], typing.Any]] = None,
+        self,
+        name: typing.Union[PSString, str],
+        namespace: typing.Union[PSString, str],
+        help_uri: typing.Union[PSString, str] = "",
+        output_type: typing.Optional[typing.List[typing.Union[PSString, str]]] = None,
+        parameters: typing.Optional[typing.Dict[typing.Union[PSString, str], typing.Any]] = None,
     ):
 
-        self.write_output(PSCustomObject(
-            PSTypeName='Selected.System.Management.Automation.CmdletInfo',
-            CommandType=CommandTypes.Cmdlet,
-            Name=name,
-            Namespace=namespace,
-            HelpUri=help_uri,
-            OutputType=output_type or [],
-            Parameters=parameters or {},
-            ResolvedCommandName=None,
-        ))
+        self.write_output(
+            PSCustomObject(
+                PSTypeName="Selected.System.Management.Automation.CmdletInfo",
+                CommandType=CommandTypes.Cmdlet,
+                Name=name,
+                Namespace=namespace,
+                HelpUri=help_uri,
+                OutputType=output_type or [],
+                Parameters=parameters or {},
+                ResolvedCommandName=None,
+            )
+        )
 
     def write_output(
-            self,
-            value: typing.Any,
+        self,
+        value: typing.Any,
     ):
         if self._count is None:
-            raise ValueError('write_count must be called before writing to the command metadata pipeline')
+            raise ValueError("write_count must be called before writing to the command metadata pipeline")
         super().write_output(value)
 
 
 class Command:
-
     def __init__(
-            self,
-            name: str,
-            is_script: bool = False,
-            use_local_scope: typing.Optional[bool] = None,
+        self,
+        name: str,
+        is_script: bool = False,
+        use_local_scope: typing.Optional[bool] = None,
     ):
         self.command_text = name
         self.is_script = is_script
@@ -1888,8 +1911,10 @@ class Command:
 
     def __repr__(self):
         cls = self.__class__
-        return f"{cls.__name__}(name='{self.command_text}', is_script={self.is_script}, " \
-               f"use_local_scope={self.use_local_scope!s})"
+        return (
+            f"{cls.__name__}(name='{self.command_text}', is_script={self.is_script}, "
+            f"use_local_scope={self.use_local_scope!s})"
+        )
 
     def __str__(self):
         return self.command_text
@@ -1923,8 +1948,8 @@ class Command:
         return self._merge_information
 
     def redirect_all(
-            self,
-            stream: PipelineResultTypes.Output,
+        self,
+        stream: PipelineResultTypes.Output,
     ):
         if stream == PipelineResultTypes.none:
             self._merge_my = stream
@@ -1936,10 +1961,7 @@ class Command:
         self.redirect_debug(stream)
         self.redirect_information(stream)
 
-    def redirect_error(
-            self,
-            stream: PipelineResultTypes.Output
-    ):
+    def redirect_error(self, stream: PipelineResultTypes.Output):
         self._validate_redirection_to(stream)
         if stream == PipelineResultTypes.none:
             self._merge_my = PipelineResultTypes.none
@@ -1951,78 +1973,63 @@ class Command:
 
         self._merge_error = stream
 
-    def redirect_warning(
-            self,
-            stream: PipelineResultTypes.Output
-    ):
+    def redirect_warning(self, stream: PipelineResultTypes.Output):
         self._validate_redirection_to(stream)
         self._merge_warning = stream
 
-    def redirect_verbose(
-            self,
-            stream: PipelineResultTypes.Output
-    ):
+    def redirect_verbose(self, stream: PipelineResultTypes.Output):
         self._validate_redirection_to(stream)
         self._merge_verbose = stream
 
-    def redirect_debug(
-            self,
-            stream: PipelineResultTypes.Output
-    ):
+    def redirect_debug(self, stream: PipelineResultTypes.Output):
         self._validate_redirection_to(stream)
         self._merge_debug = stream
 
-    def redirect_information(
-            self,
-            stream: PipelineResultTypes.Output
-    ):
+    def redirect_information(self, stream: PipelineResultTypes.Output):
         self._validate_redirection_to(stream)
         self._merge_information = stream
 
     def _validate_redirection_to(
-            self,
-            stream: PipelineResultTypes,
+        self,
+        stream: PipelineResultTypes,
     ):
-        if stream not in [
-            PipelineResultTypes.none,
-            PipelineResultTypes.Output,
-            PipelineResultTypes.Null
-        ]:
-            raise ValueError('Invalid redirection stream, must be none, Output, or Null')
+        if stream not in [PipelineResultTypes.none, PipelineResultTypes.Output, PipelineResultTypes.Null]:
+            raise ValueError("Invalid redirection stream, must be none, Output, or Null")
 
     def to_psobject(
-            self,
-            protocol_version: PSVersion,
+        self,
+        protocol_version: PSVersion,
     ) -> PSObject:
-        merge_previous = PipelineResultTypes.Output | PipelineResultTypes.Error \
-            if self.merge_unclaimed else PipelineResultTypes.none
+        merge_previous = (
+            PipelineResultTypes.Output | PipelineResultTypes.Error if self.merge_unclaimed else PipelineResultTypes.none
+        )
 
         command_kwargs = {
-            'Cmd': self.command_text,
-            'Args': [_dict_to_psobject(N=n, V=v) for n, v in self.parameters],
-            'IsScript': self.is_script,
-            'UseLocalScope': self.use_local_scope,
-            'MergeMyResult': self.merge_my,
-            'MergeToResult': self.merge_to,
-            'MergePreviousResults': merge_previous,
+            "Cmd": self.command_text,
+            "Args": [_dict_to_psobject(N=n, V=v) for n, v in self.parameters],
+            "IsScript": self.is_script,
+            "UseLocalScope": self.use_local_scope,
+            "MergeMyResult": self.merge_my,
+            "MergeToResult": self.merge_to,
+            "MergePreviousResults": merge_previous,
         }
 
         # For backwards compatibility we need to optional set these values based on the peer's protocol version.
-        if protocol_version >= PSVersion('2.2'):
-            command_kwargs['MergeError'] = self.merge_error
-            command_kwargs['MergeWarning'] = self.merge_warning
-            command_kwargs['MergeVerbose'] = self.merge_verbose
-            command_kwargs['MergeDebug'] = self.merge_debug
+        if protocol_version >= PSVersion("2.2"):
+            command_kwargs["MergeError"] = self.merge_error
+            command_kwargs["MergeWarning"] = self.merge_warning
+            command_kwargs["MergeVerbose"] = self.merge_verbose
+            command_kwargs["MergeDebug"] = self.merge_debug
 
-        if protocol_version >= PSVersion('2.3'):
-            command_kwargs['MergeInformation'] = self.merge_information
+        if protocol_version >= PSVersion("2.3"):
+            command_kwargs["MergeInformation"] = self.merge_information
 
         return _dict_to_psobject(**command_kwargs)
 
     @staticmethod
     def from_psobject(
-            command: PSObject,
-    ) -> 'Command':
+        command: PSObject,
+    ) -> "Command":
         cmd = Command(
             name=command.Cmd,
             is_script=command.IsScript,
@@ -2038,12 +2045,12 @@ class Command:
         cmd._merge_to = command.MergeToResult
 
         # Depending on the peer protocolversion, these fields may not be present.
-        for name in ['Error', 'Warning', 'Verbose', 'Debug', 'Information']:
-            value = getattr(command, f'Merge{name}', None)
+        for name in ["Error", "Warning", "Verbose", "Debug", "Information"]:
+            value = getattr(command, f"Merge{name}", None)
             if value is not None:
-                setattr(cmd, f'_merge_{name.lower()}', value)
+                setattr(cmd, f"_merge_{name.lower()}", value)
 
         return cmd
 
 
-PipelineType = typing.TypeVar('PipelineType', bound=_PipelineBase)
+PipelineType = typing.TypeVar("PipelineType", bound=_PipelineBase)

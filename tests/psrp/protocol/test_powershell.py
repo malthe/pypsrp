@@ -273,11 +273,11 @@ def test_exchange_key_client():
     assert isinstance(enc_key, EncryptedSessionKeyEvent)
 
     c_pipeline = ClientPowerShell(client)
-    c_pipeline.add_script('command')
-    c_pipeline.add_argument(PSSecureString('my secret'))
+    c_pipeline.add_script("command")
+    c_pipeline.add_argument(PSSecureString("my secret"))
     c_pipeline.invoke()
     c_pipeline_data = client.data_to_send()
-    assert b'my_secret' not in c_pipeline_data.data
+    assert b"my_secret" not in c_pipeline_data.data
 
     server.receive_data(c_pipeline_data)
     create_pipeline = server.next_event()
@@ -285,23 +285,23 @@ def test_exchange_key_client():
 
     s_pipeline = create_pipeline.pipeline
     assert len(s_pipeline.commands) == 1
-    assert s_pipeline.commands[0].command_text == 'command'
-    assert s_pipeline.commands[0].parameters == [(None, 'my secret')]
+    assert s_pipeline.commands[0].command_text == "command"
+    assert s_pipeline.commands[0].parameters == [(None, "my secret")]
     assert isinstance(s_pipeline.commands[0].parameters[0][1], PSSecureString)
 
     s_pipeline.start()
-    s_pipeline.write_output(PSSecureString('secret output'))
+    s_pipeline.write_output(PSSecureString("secret output"))
     s_pipeline.close()
     s_output = server.data_to_send()
     assert s_pipeline.state == PSInvocationState.Completed
     assert server.pipeline_table == {}
-    assert b'secret output' not in s_output
+    assert b"secret output" not in s_output
 
     client.receive_data(s_output)
     out = client.next_event()
     assert isinstance(out, PipelineOutputEvent)
     assert isinstance(out.ps_object, PSSecureString)
-    assert out.ps_object == 'secret output'
+    assert out.ps_object == "secret output"
 
     state = client.next_event()
     assert isinstance(state, PipelineStateEvent)
@@ -315,14 +315,14 @@ def test_exchange_key_request():
     client, server = get_runspace_pair()
 
     c_pipeline = ClientPowerShell(client)
-    c_pipeline.add_script('command')
+    c_pipeline.add_script("command")
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
     s_pipeline = server.next_event().pipeline
     s_pipeline.start()
 
     with pytest.raises(MissingCipherError):
-        s_pipeline.write_output(PSSecureString('secret'))
+        s_pipeline.write_output(PSSecureString("secret"))
 
     server.request_key()
     client.receive_data(server.data_to_send())
@@ -330,13 +330,13 @@ def test_exchange_key_request():
     assert isinstance(pub_key_req, PublicKeyRequestEvent)
 
     with pytest.raises(MissingCipherError):
-        s_pipeline.write_output(PSSecureString('secret'))
+        s_pipeline.write_output(PSSecureString("secret"))
 
     server.receive_data(client.data_to_send())
     pub_key = server.next_event()
     assert isinstance(pub_key, PublicKeyEvent)
 
-    s_pipeline.write_output(PSSecureString('secret'))
+    s_pipeline.write_output(PSSecureString("secret"))
     s_pipeline.close()
     assert s_pipeline.state == PSInvocationState.Completed
     assert server.pipeline_table == {}
@@ -347,12 +347,12 @@ def test_exchange_key_request():
 
     b_data = server.data_to_send()
     client.receive_data(b_data)
-    assert b'secret' not in b_data
+    assert b"secret" not in b_data
 
     out = client.next_event()
     assert isinstance(out, PipelineOutputEvent)
     assert isinstance(out.ps_object, PSSecureString)
-    assert out.ps_object == 'secret'
+    assert out.ps_object == "secret"
 
     state = client.next_event()
     assert isinstance(state, PipelineStateEvent)
@@ -435,7 +435,7 @@ def test_runspace_pool_set_runspaces():
 
 def test_runspace_host_call():
     client, server = get_runspace_pair()
-    actual_ci = server.host_call(HostMethodIdentifier.WriteLine1, ['line'])
+    actual_ci = server.host_call(HostMethodIdentifier.WriteLine1, ["line"])
     client.receive_data(server.data_to_send())
     host_call = client.next_event()
 
@@ -443,7 +443,7 @@ def test_runspace_host_call():
     assert isinstance(host_call, RunspacePoolHostCallEvent)
     assert host_call.ps_object.ci == 1
     assert host_call.ps_object.mi == HostMethodIdentifier.WriteLine1
-    assert host_call.ps_object.mp == ['line']
+    assert host_call.ps_object.mp == ["line"]
 
     actual_ci = server.host_call(HostMethodIdentifier.ReadLine)
     client.receive_data(server.data_to_send())
@@ -456,11 +456,11 @@ def test_runspace_host_call():
     assert host_call.ps_object.mp is None
 
     error = ErrorRecord(
-        Exception=NETException('ReadLine error'),
+        Exception=NETException("ReadLine error"),
         CategoryInfo=ErrorCategoryInfo(
-            Reason='Exception',
+            Reason="Exception",
         ),
-        FullyQualifiedErrorId='RemoteHostExecutionException',
+        FullyQualifiedErrorId="RemoteHostExecutionException",
     )
     client.host_response(2, error_record=error)
     server.receive_data(client.data_to_send())
@@ -470,10 +470,10 @@ def test_runspace_host_call():
     assert host_resp.ps_object.ci == 2
     assert host_resp.ps_object.mi == HostMethodIdentifier.ReadLine
     assert isinstance(host_resp.ps_object.me, ErrorRecord)
-    assert str(host_resp.ps_object.me) == 'ReadLine error'
-    assert host_resp.ps_object.me.Exception.Message == 'ReadLine error'
-    assert host_resp.ps_object.me.FullyQualifiedErrorId == 'RemoteHostExecutionException'
-    assert host_resp.ps_object.me.CategoryInfo.Reason == 'Exception'
+    assert str(host_resp.ps_object.me) == "ReadLine error"
+    assert host_resp.ps_object.me.Exception.Message == "ReadLine error"
+    assert host_resp.ps_object.me.FullyQualifiedErrorId == "RemoteHostExecutionException"
+    assert host_resp.ps_object.me.CategoryInfo.Reason == "Exception"
 
 
 def test_runspace_reset():
@@ -491,19 +491,19 @@ def test_runspace_reset():
 
 def test_runspace_user_event():
     client, server = get_runspace_pair()
-    server.format_event(1, 'source id', sender='pool', message_data=True)
+    server.format_event(1, "source id", sender="pool", message_data=True)
     client.receive_data(server.data_to_send())
     event = client.next_event()
 
     assert isinstance(event, UserEventEvent)
-    assert event.ps_object['PSEventArgs.ComputerName'] is not None
-    assert event.ps_object['PSEventArgs.EventIdentifier'] == 1
-    assert event.ps_object['PSEventArgs.MessageData'] is True
-    assert event.ps_object['PSEventArgs.RunspaceId'] == PSGuid(client.runspace_id)
-    assert event.ps_object['PSEventArgs.Sender'] == 'pool'
-    assert event.ps_object['PSEventArgs.SourceArgs'] == []
-    assert event.ps_object['PSEventArgs.SourceIdentifier'] == 'source id'
-    assert event.ps_object['PSEventArgs.TimeGenerated'] is not None
+    assert event.ps_object["PSEventArgs.ComputerName"] is not None
+    assert event.ps_object["PSEventArgs.EventIdentifier"] == 1
+    assert event.ps_object["PSEventArgs.MessageData"] is True
+    assert event.ps_object["PSEventArgs.RunspaceId"] == PSGuid(client.runspace_id)
+    assert event.ps_object["PSEventArgs.Sender"] == "pool"
+    assert event.ps_object["PSEventArgs.SourceArgs"] == []
+    assert event.ps_object["PSEventArgs.SourceIdentifier"] == "source id"
+    assert event.ps_object["PSEventArgs.TimeGenerated"] is not None
 
 
 def test_create_pipeline():
@@ -512,10 +512,10 @@ def test_create_pipeline():
     c_pipeline = ClientPowerShell(client)
     assert c_pipeline.state == PSInvocationState.NotStarted
 
-    with pytest.raises(ValueError, match='A command is required to invoke a PowerShell pipeline'):
+    with pytest.raises(ValueError, match="A command is required to invoke a PowerShell pipeline"):
         c_pipeline.invoke()
 
-    c_pipeline.add_script('testing')
+    c_pipeline.add_script("testing")
     c_pipeline.invoke()
     assert c_pipeline.state == PSInvocationState.Running
 
@@ -528,7 +528,7 @@ def test_create_pipeline():
     assert s_pipeline.add_to_history is False
     assert s_pipeline.apartment_state == ApartmentState.Unknown
     assert len(s_pipeline.commands) == 1
-    assert s_pipeline.commands[0].command_text == 'testing'
+    assert s_pipeline.commands[0].command_text == "testing"
     assert s_pipeline.commands[0].end_of_statement is True
     assert s_pipeline.commands[0].is_script is True
     assert s_pipeline.commands[0].parameters == []
@@ -551,13 +551,13 @@ def test_create_pipeline():
     assert server.pipeline_table[s_pipeline.pipeline_id] == s_pipeline
 
     s_pipeline.start()
-    s_pipeline.write_output('output msg')
+    s_pipeline.write_output("output msg")
     s_pipeline.close()
     client.receive_data(server.data_to_send())
     out = client.next_event()
     assert server.pipeline_table == {}
     assert isinstance(out, PipelineOutputEvent)
-    assert out.ps_object == 'output msg'
+    assert out.ps_object == "output msg"
 
     state = client.next_event()
     assert isinstance(state, PipelineStateEvent)
@@ -579,7 +579,7 @@ def test_create_pipeline_host_data():
         window_size=Size(8, 9),
         max_window_size=Size(10, 11),
         max_physical_window_size=Size(12, 13),
-        window_title='Test Title',
+        window_title="Test Title",
     )
     c_host = HostInfo(
         use_runspace_host=False,
@@ -590,7 +590,7 @@ def test_create_pipeline_host_data():
     )
 
     c_pipeline = ClientPowerShell(client, host=c_host)
-    c_pipeline.add_script('testing')
+    c_pipeline.add_script("testing")
     c_pipeline.invoke()
 
     server.receive_data(client.data_to_send())
@@ -619,20 +619,20 @@ def test_create_pipeline_host_data():
     assert s_host.host_default_data.max_window_size.Height == 11
     assert s_host.host_default_data.max_physical_window_size.Width == 12
     assert s_host.host_default_data.max_physical_window_size.Height == 13
-    assert s_host.host_default_data.window_title == 'Test Title'
+    assert s_host.host_default_data.window_title == "Test Title"
 
 
 def test_pipeline_multiple_commands():
     client, server = get_runspace_pair()
     c_pipeline = ClientPowerShell(client)
 
-    c_pipeline.add_command('Get-ChildItem')
-    c_pipeline.add_command('Select-Object', use_local_scope=True)
-    complex_command = Command('Format-List', use_local_scope=False)
+    c_pipeline.add_command("Get-ChildItem")
+    c_pipeline.add_command("Select-Object", use_local_scope=True)
+    complex_command = Command("Format-List", use_local_scope=False)
     complex_command.redirect_error(PipelineResultTypes.Output)
     c_pipeline.add_command(complex_command)
 
-    with pytest.raises(TypeError, match='Cannot set use_local_scope with Command'):
+    with pytest.raises(TypeError, match="Cannot set use_local_scope with Command"):
         c_pipeline.add_command(complex_command, use_local_scope=False)
 
     c_pipeline.invoke()
@@ -642,25 +642,25 @@ def test_pipeline_multiple_commands():
     s_pipeline = create_pipe.pipeline
 
     assert len(s_pipeline.commands) == 3
-    assert str(s_pipeline.commands[0]) == 'Get-ChildItem'
+    assert str(s_pipeline.commands[0]) == "Get-ChildItem"
     assert repr(s_pipeline.commands[0]) == "Command(name='Get-ChildItem', is_script=False, use_local_scope=None)"
-    assert s_pipeline.commands[0].command_text == 'Get-ChildItem'
+    assert s_pipeline.commands[0].command_text == "Get-ChildItem"
     assert s_pipeline.commands[0].end_of_statement is False
     assert s_pipeline.commands[0].use_local_scope is None
     assert s_pipeline.commands[0].merge_error == PipelineResultTypes.none
     assert s_pipeline.commands[0].merge_my == PipelineResultTypes.none
     assert s_pipeline.commands[0].merge_to == PipelineResultTypes.none
-    assert str(s_pipeline.commands[1]) == 'Select-Object'
+    assert str(s_pipeline.commands[1]) == "Select-Object"
     assert repr(s_pipeline.commands[1]) == "Command(name='Select-Object', is_script=False, use_local_scope=True)"
-    assert s_pipeline.commands[1].command_text == 'Select-Object'
+    assert s_pipeline.commands[1].command_text == "Select-Object"
     assert s_pipeline.commands[1].end_of_statement is False
     assert s_pipeline.commands[1].use_local_scope is True
     assert s_pipeline.commands[1].merge_error == PipelineResultTypes.none
     assert s_pipeline.commands[1].merge_my == PipelineResultTypes.none
     assert s_pipeline.commands[1].merge_to == PipelineResultTypes.none
-    assert str(s_pipeline.commands[2]) == 'Format-List'
+    assert str(s_pipeline.commands[2]) == "Format-List"
     assert repr(s_pipeline.commands[2]) == "Command(name='Format-List', is_script=False, use_local_scope=False)"
-    assert s_pipeline.commands[2].command_text == 'Format-List'
+    assert s_pipeline.commands[2].command_text == "Format-List"
     assert s_pipeline.commands[2].end_of_statement is True
     assert s_pipeline.commands[2].use_local_scope is False
     assert s_pipeline.commands[2].merge_error == PipelineResultTypes.Output
@@ -673,36 +673,36 @@ def test_pipeline_multiple_statements():
     c_pipeline = ClientPowerShell(client)
 
     c_pipeline.add_statement()  # Should do nothing, not fail
-    c_pipeline.add_command('Get-ChildItem')
-    c_pipeline.add_command('Format-List')
+    c_pipeline.add_command("Get-ChildItem")
+    c_pipeline.add_command("Format-List")
     c_pipeline.add_statement()
-    c_pipeline.add_script('Test-Path', use_local_scope=True)
+    c_pipeline.add_script("Test-Path", use_local_scope=True)
     c_pipeline.add_statement()
-    c_pipeline.add_command('Get-Service')
-    c_pipeline.add_command('Format-Table')
+    c_pipeline.add_command("Get-Service")
+    c_pipeline.add_command("Format-Table")
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
     create_pipe = server.next_event()
     s_pipeline = create_pipe.pipeline
 
     assert len(s_pipeline.commands) == 5
-    assert s_pipeline.commands[0].command_text == 'Get-ChildItem'
+    assert s_pipeline.commands[0].command_text == "Get-ChildItem"
     assert s_pipeline.commands[0].use_local_scope is None
     assert s_pipeline.commands[0].is_script is False
     assert s_pipeline.commands[0].end_of_statement is False
-    assert s_pipeline.commands[1].command_text == 'Format-List'
+    assert s_pipeline.commands[1].command_text == "Format-List"
     assert s_pipeline.commands[1].use_local_scope is None
     assert s_pipeline.commands[1].is_script is False
     assert s_pipeline.commands[1].end_of_statement is True
-    assert s_pipeline.commands[2].command_text == 'Test-Path'
+    assert s_pipeline.commands[2].command_text == "Test-Path"
     assert s_pipeline.commands[2].use_local_scope is True
     assert s_pipeline.commands[2].is_script is True
     assert s_pipeline.commands[2].end_of_statement is True
-    assert s_pipeline.commands[3].command_text == 'Get-Service'
+    assert s_pipeline.commands[3].command_text == "Get-Service"
     assert s_pipeline.commands[3].use_local_scope is None
     assert s_pipeline.commands[3].is_script is False
     assert s_pipeline.commands[3].end_of_statement is False
-    assert s_pipeline.commands[4].command_text == 'Format-Table'
+    assert s_pipeline.commands[4].command_text == "Format-Table"
     assert s_pipeline.commands[4].use_local_scope is None
     assert s_pipeline.commands[4].is_script is False
     assert s_pipeline.commands[4].end_of_statement is True
@@ -712,47 +712,49 @@ def test_pipeline_parameters():
     client, server = get_runspace_pair()
     c_pipeline = ClientPowerShell(client)
 
-    expected = re.escape('A command is required to add a parameter/argument. A command must be added to the '
-                         'PowerShell instance first.')
+    expected = re.escape(
+        "A command is required to add a parameter/argument. A command must be added to the "
+        "PowerShell instance first."
+    )
     with pytest.raises(ValueError, match=expected):
-        c_pipeline.add_argument('argument')
+        c_pipeline.add_argument("argument")
 
     with pytest.raises(ValueError, match=expected):
-        c_pipeline.add_parameter('name', 'value')
+        c_pipeline.add_parameter("name", "value")
 
     with pytest.raises(ValueError, match=expected):
-        c_pipeline.add_parameters({'name': 'value'})
+        c_pipeline.add_parameters({"name": "value"})
 
-    c_pipeline.add_command('Get-ChildItem')
-    c_pipeline.add_argument('/tmp')
+    c_pipeline.add_command("Get-ChildItem")
+    c_pipeline.add_argument("/tmp")
     c_pipeline.add_argument(True)
     c_pipeline.add_statement()
 
-    c_pipeline.add_command('Get-ChildItem')
-    c_pipeline.add_parameter('Path', '/tmp')
-    c_pipeline.add_parameter('Force')
+    c_pipeline.add_command("Get-ChildItem")
+    c_pipeline.add_parameter("Path", "/tmp")
+    c_pipeline.add_parameter("Force")
     c_pipeline.add_statement()
 
-    c_pipeline.add_command('Get-ChildItem')
-    c_pipeline.add_parameters({'Path': '/tmp', 'Force': True})
+    c_pipeline.add_command("Get-ChildItem")
+    c_pipeline.add_parameters({"Path": "/tmp", "Force": True})
 
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
     create_pipe = server.next_event()
     s_pipeline = create_pipe.pipeline
 
-    assert s_pipeline.commands[0].parameters == [(None, '/tmp'), (None, True)]
-    assert s_pipeline.commands[1].parameters == [('Path', '/tmp'), ('Force', None)]
-    assert s_pipeline.commands[2].parameters == [('Path', '/tmp'), ('Force', True)]
+    assert s_pipeline.commands[0].parameters == [(None, "/tmp"), (None, True)]
+    assert s_pipeline.commands[1].parameters == [("Path", "/tmp"), ("Force", None)]
+    assert s_pipeline.commands[2].parameters == [("Path", "/tmp"), ("Force", True)]
 
 
 def test_pipeline_redirection():
     client, server = get_runspace_pair()
     c_pipeline = ClientPowerShell(client)
 
-    command = Command('My-Cmdlet')
+    command = Command("My-Cmdlet")
 
-    expected = re.escape('Invalid redirection stream, must be none, Output, or Null')
+    expected = re.escape("Invalid redirection stream, must be none, Output, or Null")
     with pytest.raises(ValueError, match=expected):
         command.redirect_error(PipelineResultTypes.Error)
 
@@ -775,27 +777,27 @@ def test_pipeline_redirection():
     command.merge_unclaimed = True
     c_pipeline.add_command(command)
 
-    command = Command('My-Cmdlet2')
+    command = Command("My-Cmdlet2")
     command.redirect_all(PipelineResultTypes.Null)
     c_pipeline.add_command(command)
 
-    command = Command('My-Cmdlet3')
+    command = Command("My-Cmdlet3")
     command.redirect_debug(PipelineResultTypes.Output)
     c_pipeline.add_command(command)
 
-    command = Command('My-Cmdlet4')
+    command = Command("My-Cmdlet4")
     command.redirect_warning(PipelineResultTypes.Output)
     c_pipeline.add_command(command)
 
-    command = Command('My-Cmdlet5')
+    command = Command("My-Cmdlet5")
     command.redirect_verbose(PipelineResultTypes.Output)
     c_pipeline.add_command(command)
 
-    command = Command('My-Cmdlet6')
+    command = Command("My-Cmdlet6")
     command.redirect_information(PipelineResultTypes.Output)
     c_pipeline.add_command(command)
 
-    command = Command('My-Cmdlet7')
+    command = Command("My-Cmdlet7")
     command.redirect_all(PipelineResultTypes.Output)
     command.redirect_all(PipelineResultTypes.none)  # Resets it back to normal
     c_pipeline.add_command(command)
@@ -805,7 +807,7 @@ def test_pipeline_redirection():
     create_pipe = server.next_event()
     s_pipeline = create_pipe.pipeline
 
-    assert s_pipeline.commands[0].command_text == 'My-Cmdlet'
+    assert s_pipeline.commands[0].command_text == "My-Cmdlet"
     assert s_pipeline.commands[0].merge_debug == PipelineResultTypes.none
     assert s_pipeline.commands[0].merge_error == PipelineResultTypes.Output
     assert s_pipeline.commands[0].merge_information == PipelineResultTypes.none
@@ -815,7 +817,7 @@ def test_pipeline_redirection():
     assert s_pipeline.commands[0].merge_verbose == PipelineResultTypes.none
     assert s_pipeline.commands[0].merge_warning == PipelineResultTypes.none
 
-    assert s_pipeline.commands[1].command_text == 'My-Cmdlet2'
+    assert s_pipeline.commands[1].command_text == "My-Cmdlet2"
     assert s_pipeline.commands[1].merge_debug == PipelineResultTypes.Null
     assert s_pipeline.commands[1].merge_error == PipelineResultTypes.Null
     assert s_pipeline.commands[1].merge_information == PipelineResultTypes.Null
@@ -825,7 +827,7 @@ def test_pipeline_redirection():
     assert s_pipeline.commands[1].merge_verbose == PipelineResultTypes.Null
     assert s_pipeline.commands[1].merge_warning == PipelineResultTypes.Null
 
-    assert s_pipeline.commands[2].command_text == 'My-Cmdlet3'
+    assert s_pipeline.commands[2].command_text == "My-Cmdlet3"
     assert s_pipeline.commands[2].merge_debug == PipelineResultTypes.Output
     assert s_pipeline.commands[2].merge_error == PipelineResultTypes.none
     assert s_pipeline.commands[2].merge_information == PipelineResultTypes.none
@@ -835,7 +837,7 @@ def test_pipeline_redirection():
     assert s_pipeline.commands[2].merge_verbose == PipelineResultTypes.none
     assert s_pipeline.commands[2].merge_warning == PipelineResultTypes.none
 
-    assert s_pipeline.commands[3].command_text == 'My-Cmdlet4'
+    assert s_pipeline.commands[3].command_text == "My-Cmdlet4"
     assert s_pipeline.commands[3].merge_debug == PipelineResultTypes.none
     assert s_pipeline.commands[3].merge_error == PipelineResultTypes.none
     assert s_pipeline.commands[3].merge_information == PipelineResultTypes.none
@@ -845,7 +847,7 @@ def test_pipeline_redirection():
     assert s_pipeline.commands[3].merge_verbose == PipelineResultTypes.none
     assert s_pipeline.commands[3].merge_warning == PipelineResultTypes.Output
 
-    assert s_pipeline.commands[4].command_text == 'My-Cmdlet5'
+    assert s_pipeline.commands[4].command_text == "My-Cmdlet5"
     assert s_pipeline.commands[4].merge_debug == PipelineResultTypes.none
     assert s_pipeline.commands[4].merge_error == PipelineResultTypes.none
     assert s_pipeline.commands[4].merge_information == PipelineResultTypes.none
@@ -855,7 +857,7 @@ def test_pipeline_redirection():
     assert s_pipeline.commands[4].merge_verbose == PipelineResultTypes.Output
     assert s_pipeline.commands[4].merge_warning == PipelineResultTypes.none
 
-    assert s_pipeline.commands[5].command_text == 'My-Cmdlet6'
+    assert s_pipeline.commands[5].command_text == "My-Cmdlet6"
     assert s_pipeline.commands[5].merge_debug == PipelineResultTypes.none
     assert s_pipeline.commands[5].merge_error == PipelineResultTypes.none
     assert s_pipeline.commands[5].merge_information == PipelineResultTypes.Output
@@ -865,7 +867,7 @@ def test_pipeline_redirection():
     assert s_pipeline.commands[5].merge_verbose == PipelineResultTypes.none
     assert s_pipeline.commands[5].merge_warning == PipelineResultTypes.none
 
-    assert s_pipeline.commands[6].command_text == 'My-Cmdlet7'
+    assert s_pipeline.commands[6].command_text == "My-Cmdlet7"
     assert s_pipeline.commands[6].merge_debug == PipelineResultTypes.none
     assert s_pipeline.commands[6].merge_error == PipelineResultTypes.none
     assert s_pipeline.commands[6].merge_information == PipelineResultTypes.none
@@ -882,7 +884,7 @@ def test_pipeline_input_output():
     c_pipeline = ClientPowerShell(client, no_input=False)
     assert c_pipeline.state == PSInvocationState.NotStarted
 
-    c_pipeline.add_script('Get-Service')
+    c_pipeline.add_script("Get-Service")
     c_pipeline.invoke()
     assert c_pipeline.state == PSInvocationState.Running
 
@@ -893,7 +895,7 @@ def test_pipeline_input_output():
     assert isinstance(create_pipeline, CreatePipelineEvent)
     assert isinstance(s_pipeline, ServerPowerShell)
     assert len(s_pipeline.commands) == 1
-    assert s_pipeline.commands[0].command_text == 'Get-Service'
+    assert s_pipeline.commands[0].command_text == "Get-Service"
     assert s_pipeline.no_input is False
     assert s_pipeline.runspace_pool == server
     assert s_pipeline.state == PSInvocationState.NotStarted
@@ -901,8 +903,8 @@ def test_pipeline_input_output():
     assert server.pipeline_table[s_pipeline.pipeline_id] == s_pipeline
 
     s_pipeline.start()
-    c_pipeline.send('input 1')
-    c_pipeline.send('input 2')
+    c_pipeline.send("input 1")
+    c_pipeline.send("input 2")
     c_pipeline.send(3)
     server.receive_data(client.data_to_send())
 
@@ -913,10 +915,10 @@ def test_pipeline_input_output():
     assert server.next_event() is None
     assert isinstance(input1, PipelineInputEvent)
     assert isinstance(input1.ps_object, PSString)
-    assert input1.ps_object == 'input 1'
+    assert input1.ps_object == "input 1"
     assert isinstance(input2, PipelineInputEvent)
     assert isinstance(input2.ps_object, PSString)
-    assert input2.ps_object == 'input 2'
+    assert input2.ps_object == "input 2"
     assert isinstance(input3, PipelineInputEvent)
     assert isinstance(input3.ps_object, PSInt)
     assert input3.ps_object == 3
@@ -926,36 +928,36 @@ def test_pipeline_input_output():
     end_of_input = server.next_event()
     assert isinstance(end_of_input, EndOfPipelineInputEvent)
 
-    s_pipeline.write_output('output')
-    s_pipeline.write_debug('debug')
-    s_pipeline.write_error(NETException('error'))
-    s_pipeline.write_verbose('verbose')
-    s_pipeline.write_warning('warning')
-    s_pipeline.write_information('information', 'source')
-    s_pipeline.write_progress('activity', 1, 'description')
+    s_pipeline.write_output("output")
+    s_pipeline.write_debug("debug")
+    s_pipeline.write_error(NETException("error"))
+    s_pipeline.write_verbose("verbose")
+    s_pipeline.write_warning("warning")
+    s_pipeline.write_information("information", "source")
+    s_pipeline.write_progress("activity", 1, "description")
     s_pipeline.close()
     client.receive_data(server.data_to_send())
 
     output_event = client.next_event()
     assert isinstance(output_event, PipelineOutputEvent)
     assert isinstance(output_event.ps_object, PSString)
-    assert output_event.ps_object == 'output'
+    assert output_event.ps_object == "output"
 
     debug_event = client.next_event()
     assert isinstance(debug_event, DebugRecordEvent)
     assert isinstance(debug_event.ps_object, InformationalRecord)
     assert debug_event.ps_object.InvocationInfo is None
-    assert debug_event.ps_object.Message == 'debug'
+    assert debug_event.ps_object.Message == "debug"
     assert debug_event.ps_object.PipelineIterationInfo is None
 
     error_event = client.next_event()
     assert isinstance(error_event, ErrorRecordEvent)
     assert isinstance(error_event.ps_object, ErrorRecord)
-    assert str(error_event.ps_object) == 'error'
+    assert str(error_event.ps_object) == "error"
     assert isinstance(error_event.ps_object.Exception, NETException)
-    assert error_event.ps_object.Exception.Message == 'error'
+    assert error_event.ps_object.Exception.Message == "error"
     assert isinstance(error_event.ps_object.CategoryInfo, ErrorCategoryInfo)
-    assert str(error_event.ps_object.CategoryInfo), 'NotSpecified (:) [], '
+    assert str(error_event.ps_object.CategoryInfo), "NotSpecified (:) [], "
     assert error_event.ps_object.CategoryInfo.Category == ErrorCategory.NotSpecified
     assert error_event.ps_object.CategoryInfo.Reason is None
     assert error_event.ps_object.CategoryInfo.TargetName is None
@@ -970,14 +972,14 @@ def test_pipeline_input_output():
     assert isinstance(verbose_event, VerboseRecordEvent)
     assert isinstance(verbose_event.ps_object, InformationalRecord)
     assert verbose_event.ps_object.InvocationInfo is None
-    assert verbose_event.ps_object.Message == 'verbose'
+    assert verbose_event.ps_object.Message == "verbose"
     assert verbose_event.ps_object.PipelineIterationInfo is None
 
     warning_event = client.next_event()
     assert isinstance(warning_event, WarningRecordEvent)
     assert isinstance(warning_event.ps_object, InformationalRecord)
     assert warning_event.ps_object.InvocationInfo is None
-    assert warning_event.ps_object.Message == 'warning'
+    assert warning_event.ps_object.Message == "warning"
     assert warning_event.ps_object.PipelineIterationInfo is None
 
     info_event = client.next_event()
@@ -985,23 +987,23 @@ def test_pipeline_input_output():
     assert isinstance(info_event.ps_object, InformationRecord)
     assert info_event.ps_object.Computer is not None
     assert info_event.ps_object.ManagedThreadId == 0
-    assert info_event.ps_object.MessageData == 'information'
+    assert info_event.ps_object.MessageData == "information"
     assert info_event.ps_object.NativeThreadId > 0
     assert info_event.ps_object.ProcessId > 0
-    assert info_event.ps_object.Source == 'source'
+    assert info_event.ps_object.Source == "source"
     assert info_event.ps_object.Tags == []
     assert info_event.ps_object.TimeGenerated is not None
     assert info_event.ps_object.User is not None
 
     progress_event = client.next_event()
     assert isinstance(progress_event, ProgressRecordEvent)
-    assert progress_event.ps_object.Activity == 'activity'
+    assert progress_event.ps_object.Activity == "activity"
     assert progress_event.ps_object.ActivityId == 1
     assert progress_event.ps_object.CurrentOperation is None
     assert progress_event.ps_object.ParentActivityId == -1
     assert progress_event.ps_object.PercentComplete == -1
     assert progress_event.ps_object.SecondsRemaining == -1
-    assert progress_event.ps_object.StatusDescription == 'description'
+    assert progress_event.ps_object.StatusDescription == "description"
     assert progress_event.ps_object.Type == ProgressRecordType.Processing
 
     state_event = client.next_event()
@@ -1016,7 +1018,7 @@ def test_pipeline_stop():
     c_pipeline = ClientPowerShell(client, no_input=False)
     assert c_pipeline.state == PSInvocationState.NotStarted
 
-    c_pipeline.add_script('script')
+    c_pipeline.add_script("script")
     c_pipeline.invoke()
     assert c_pipeline.state == PSInvocationState.Running
 
@@ -1037,13 +1039,13 @@ def test_pipeline_stop():
     assert isinstance(state, PipelineStateEvent)
     assert isinstance(state.reason, ErrorRecord)
     assert state.state == PSInvocationState.Stopped
-    assert str(state.reason) == 'The pipeline has been stopped.'
-    assert str(state.reason.CategoryInfo) == 'OperationStopped (:) [], PipelineStoppedException'
+    assert str(state.reason) == "The pipeline has been stopped."
+    assert str(state.reason.CategoryInfo) == "OperationStopped (:) [], PipelineStoppedException"
     assert state.reason.CategoryInfo.Category == ErrorCategory.OperationStopped
-    assert state.reason.CategoryInfo.Reason == 'PipelineStoppedException'
-    assert state.reason.Exception.Message == 'The pipeline has been stopped.'
+    assert state.reason.CategoryInfo.Reason == "PipelineStoppedException"
+    assert state.reason.Exception.Message == "The pipeline has been stopped."
     assert state.reason.Exception.HResult == -2146233087
-    assert state.reason.FullyQualifiedErrorId == 'PipelineStopped'
+    assert state.reason.FullyQualifiedErrorId == "PipelineStopped"
     assert state.reason.InvocationInfo is None
     assert state.reason.PipelineIterationInfo is None
     assert state.reason.ScriptStackTrace is None
@@ -1064,31 +1066,28 @@ def test_pipeline_host_call():
     server.receive_data(client.data_to_send())
     s_pipeline = server.next_event().pipeline
     s_pipeline.start()
-    s_pipeline.host_call(
-        HostMethodIdentifier.PromptForCredential1,
-        ['caption', 'message', 'username', 'targetname']
-    )
+    s_pipeline.host_call(HostMethodIdentifier.PromptForCredential1, ["caption", "message", "username", "targetname"])
 
     client.receive_data(server.data_to_send())
     host_call = client.next_event()
     assert isinstance(host_call, PipelineHostCallEvent)
     assert host_call.ps_object.ci == 1
     assert host_call.ps_object.mi == HostMethodIdentifier.PromptForCredential1
-    assert host_call.ps_object.mp == ['caption', 'message', 'username', 'targetname']
+    assert host_call.ps_object.mp == ["caption", "message", "username", "targetname"]
 
-    c_pipeline.host_response(1, 'prompt response')
+    c_pipeline.host_response(1, "prompt response")
     server.receive_data(client.data_to_send())
     host_response = server.next_event()
     assert isinstance(host_response, PipelineHostResponseEvent)
     assert host_response.ps_object.ci == 1
     assert host_response.ps_object.mi == HostMethodIdentifier.PromptForCredential1
-    assert host_response.ps_object.mr == 'prompt response'
+    assert host_response.ps_object.mr == "prompt response"
 
 
 def test_command_metadata():
     client, server = get_runspace_pair()
 
-    c_pipeline = ClientGetCommandMetadata(client, 'Invoke*')
+    c_pipeline = ClientGetCommandMetadata(client, "Invoke*")
     c_pipeline.invoke()
 
     server.receive_data(client.data_to_send())
@@ -1098,11 +1097,11 @@ def test_command_metadata():
     s_pipeline = command_meta.pipeline
     s_pipeline.start()
 
-    with pytest.raises(ValueError, match='write_count must be called before writing to the command metadata pipeline'):
-        s_pipeline.write_output('abc')
+    with pytest.raises(ValueError, match="write_count must be called before writing to the command metadata pipeline"):
+        s_pipeline.write_output("abc")
 
     s_pipeline.write_count(1)
-    s_pipeline.write_cmdlet_info('Invoke-Expression', 'namespace')
+    s_pipeline.write_cmdlet_info("Invoke-Expression", "namespace")
     s_pipeline.close()
 
     assert s_pipeline.state == PSInvocationState.Completed
@@ -1120,9 +1119,9 @@ def test_command_metadata():
     assert isinstance(count, PipelineOutputEvent)
     assert count.ps_object.Count == 1
     assert isinstance(iex, PipelineOutputEvent)
-    assert iex.ps_object.Name == 'Invoke-Expression'
-    assert iex.ps_object.Namespace == 'namespace'
-    assert iex.ps_object.HelpUri == ''
+    assert iex.ps_object.Name == "Invoke-Expression"
+    assert iex.ps_object.Namespace == "namespace"
+    assert iex.ps_object.HelpUri == ""
     assert iex.ps_object.OutputType == []
     assert iex.ps_object.Parameters == {}
     assert iex.ps_object.ResolvedCommandName is None
@@ -1131,7 +1130,9 @@ def test_command_metadata():
 
 
 def test_init_powershell_fail():
-    expected = re.escape("Type PowerShell cannot be instantiated; it can be used only as a base class for "
-                         "client/server pipeline types.")
+    expected = re.escape(
+        "Type PowerShell cannot be instantiated; it can be used only as a base class for "
+        "client/server pipeline types."
+    )
     with pytest.raises(TypeError, match=expected):
         PowerShell()

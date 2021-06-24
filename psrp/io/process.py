@@ -8,11 +8,10 @@ import typing
 
 
 class Process:
-
     def __init__(
-            self,
-            executable: str,
-            arguments: typing.Optional[typing.List[str]] = None,
+        self,
+        executable: str,
+        arguments: typing.Optional[typing.List[str]] = None,
     ):
         self.executable = executable
         self.arguments = arguments or []
@@ -37,9 +36,7 @@ class Process:
         arguments = [self.executable]
         arguments.extend(self.arguments)
 
-        self._process = subprocess.Popen(
-            arguments, stdin=pipe, stdout=pipe, stderr=pipe
-        )
+        self._process = subprocess.Popen(arguments, stdin=pipe, stdout=pipe, stderr=pipe)
 
     def read(self):
         stdout = self._process.stdout.readline()
@@ -62,11 +59,10 @@ class Process:
 
 
 class AsyncProcess(Process):
-
     def __init__(
-            self,
-            executable: str,
-            arguments: typing.Optional[typing.List[str]] = None,
+        self,
+        executable: str,
+        arguments: typing.Optional[typing.List[str]] = None,
     ):
         super().__init__(executable, arguments)
         self._write_lock = asyncio.Lock()
@@ -96,7 +92,7 @@ class AsyncProcess(Process):
             output = await pipe.readline()
             return name, output
 
-        tasks = [read_pipe(n) for n in ['stdout', 'stderr']]
+        tasks = [read_pipe(n) for n in ["stdout", "stderr"]]
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         output = None
 
@@ -104,7 +100,7 @@ class AsyncProcess(Process):
             name, output = await coro
 
             if output:
-                if name == 'stderr':
+                if name == "stderr":
                     raise Exception(output.decode())
 
             else:
@@ -117,8 +113,8 @@ class AsyncProcess(Process):
         return output
 
     async def write(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ):
         async with self._write_lock:
             print("Write\t" + data.decode().strip())

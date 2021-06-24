@@ -33,16 +33,14 @@ H11Event = typing.Union[
 ]
 
 
-def exponential_backoff(
-        factor: float
-) -> typing.Iterator[float]:
+def exponential_backoff(factor: float) -> typing.Iterator[float]:
     yield 0
     for n in itertools.count(2):
         yield factor * (2 ** (n - 2))
 
 
 def get_tls_server_end_point_hash(
-        certificate_der: bytes,
+    certificate_der: bytes,
 ) -> bytes:
     """Get Channel Binding hash.
 
@@ -65,7 +63,7 @@ def get_tls_server_end_point_hash(
 
     # If the cert signature algorithm is unknown, md5, or sha1 then use sha256 otherwise use the signature
     # algorithm of the cert itself.
-    if not hash_algorithm or hash_algorithm.name in ['md5', 'sha1']:
+    if not hash_algorithm or hash_algorithm.name in ["md5", "sha1"]:
         digest = hashes.Hash(hashes.SHA256(), backend)
     else:
         digest = hashes.Hash(hash_algorithm, backend)
@@ -76,9 +74,7 @@ def get_tls_server_end_point_hash(
     return certificate_hash
 
 
-def is_socket_readable(
-        sock_fd: int
-) -> bool:
+def is_socket_readable(sock_fd: int) -> bool:
     """
     Return whether a socket, as identifed by its file descriptor, is readable.
 
@@ -102,9 +98,7 @@ def is_socket_readable(
 
 
 @contextlib.contextmanager
-def map_exceptions(
-        exc_map: typing.Dict[typing.Type[Exception], typing.Type[Exception]]
-) -> typing.Iterator[None]:
+def map_exceptions(exc_map: typing.Dict[typing.Type[Exception], typing.Type[Exception]]) -> typing.Iterator[None]:
     try:
         yield
     except Exception as exc:

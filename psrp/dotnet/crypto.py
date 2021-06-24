@@ -49,16 +49,16 @@ def create_keypair() -> typing.Tuple[rsa.RSAPrivateKey, bytes]:
         modulus >>= 8
 
     # The public key bytes follow a set structure defined in MS-PSRP.
-    public_key_bytes = b'\x06\x02\x00\x00\x00\xa4\x00\x00' \
-                       b'\x52\x53\x41\x31\x00\x08\x00\x00' + \
-                       exponent + bytes(b_modulus)
+    public_key_bytes = b"\x06\x02\x00\x00\x00\xa4\x00\x00" b"\x52\x53\x41\x31\x00\x08\x00\x00" + exponent + bytes(
+        b_modulus
+    )
 
     return private_key, public_key_bytes
 
 
 def encrypt_session_key(
-        exchange_key: bytes,
-        session_key: bytes,
+    exchange_key: bytes,
+    session_key: bytes,
 ) -> bytes:
     """Encrypt session key.
 
@@ -88,16 +88,14 @@ def encrypt_session_key(
         session_key,
         padding.PKCS1v15(),
     )[::-1]
-    encrypted_key_bytes = b'\x01\x02\x00\x00\x10\x66\x00\x00' \
-                          b'\x00\xa4\x00\x00' + \
-                          encrypted_key
+    encrypted_key_bytes = b"\x01\x02\x00\x00\x10\x66\x00\x00" b"\x00\xa4\x00\x00" + encrypted_key
 
     return encrypted_key_bytes
 
 
 def decrypt_session_key(
-        exchange_key: rsa.RSAPrivateKey,
-        encrypted_session_key: bytes,
+    exchange_key: rsa.RSAPrivateKey,
+    encrypted_session_key: bytes,
 ) -> bytes:
     """Decrypt session key.
 
@@ -127,10 +125,7 @@ class CryptoProvider(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def decrypt(
-            self,
-            value: bytes
-    ) -> bytes:
+    def decrypt(self, value: bytes) -> bytes:
         """Decrypts the encrypted bytes.
 
         Decrypts the encrypted bytes passed in.
@@ -145,8 +140,8 @@ class CryptoProvider(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def encrypt(
-            self,
-            value: bytes,
+        self,
+        value: bytes,
     ) -> bytes:
         """Encrypted the bytes.
 
@@ -172,18 +167,15 @@ class PSRemotingCrypto(CryptoProvider):
     """
 
     def __init__(
-            self,
-            key: bytes,
+        self,
+        key: bytes,
     ):
         algorithm = algorithms.AES(key)
         mode = modes.CBC(b"\x00" * 16)  # PSRP doesn't use an IV
         self._cipher = Cipher(algorithm, mode, default_backend())
         self._padding = PKCS7(algorithm.block_size)
 
-    def decrypt(
-            self,
-            value: bytes
-    ) -> bytes:
+    def decrypt(self, value: bytes) -> bytes:
         decryptor = self._cipher.decryptor()
         b_dec = decryptor.update(value) + decryptor.finalize()
 
@@ -192,10 +184,7 @@ class PSRemotingCrypto(CryptoProvider):
 
         return plaintext
 
-    def encrypt(
-            self,
-            value: bytes
-    ) -> bytes:
+    def encrypt(self, value: bytes) -> bytes:
         padder = self._padding.padder()
         b_padded = padder.update(value) + padder.finalize()
 

@@ -37,13 +37,13 @@ from ._utils import (
 logger = logging.getLogger(__name__)
 
 
-WWW_AUTH_PATTERN = re.compile(r'(CredSSP|Kerberos|Negotiate|NTLM)\s*([^,]*),?', re.I)
-WWW_AUTHS = 'WWW-Authenticate'
-WWW_AUTHZ = 'Authorization'
+WWW_AUTH_PATTERN = re.compile(r"(CredSSP|Kerberos|Negotiate|NTLM)\s*([^,]*),?", re.I)
+WWW_AUTHS = "WWW-Authenticate"
+WWW_AUTHZ = "Authorization"
 
 
 def _async_wrap(func, *args, **kwargs):
-    """ Runs a sync function in the background. """
+    """Runs a sync function in the background."""
     loop = asyncio.get_running_loop()
     task = loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
@@ -65,8 +65,7 @@ class AsyncAuth:
         auths_header: str = WWW_AUTHS,
         authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
-        return await connection.arequest(method, url, headers=headers,
-                                         stream=stream, ext=ext)
+        return await connection.arequest(method, url, headers=headers, stream=stream, ext=ext)
 
     def reset(self):
         pass
@@ -87,8 +86,7 @@ class SyncAuth:
         auths_header: str = WWW_AUTHS,
         authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
-        return connection.request(method, url, headers=headers, stream=stream,
-            ext=ext)
+        return connection.request(method, url, headers=headers, stream=stream, ext=ext)
 
     def reset(self):
         pass
@@ -103,13 +101,12 @@ class SyncNoAuth(SyncAuth):
 
 
 class _NegotiateAuthBase:
-
     def __init__(
         self,
         credential: typing.Any = None,
-        protocol: str = 'negotiate',
+        protocol: str = "negotiate",
         encrypt: bool = True,
-        service: str = 'HTTP',
+        service: str = "HTTP",
         hostname_override: typing.Optional[str] = None,
         disable_cbt: bool = False,
         delegate: bool = False,
@@ -117,7 +114,7 @@ class _NegotiateAuthBase:
         credssp_require_kerberos: bool = False,
     ):
         super().__init__(self)
-        valid_protocols = ['kerberos', 'negotiate', 'ntlm', 'credssp']
+        valid_protocols = ["kerberos", "negotiate", "ntlm", "credssp"]
         if protocol not in valid_protocols:
             raise ValueError(f"{type(self).__name__} protocol only supports {', '.join(valid_protocols)}")
 
@@ -141,10 +138,10 @@ class _NegotiateAuthBase:
     @property
     def _auth_header(self) -> str:
         return {
-            'negotiate': 'Negotiate',
-            'ntlm': 'Negotiate',
-            'kerberos': 'Kerberos',
-            'credssp': 'CredSSP',
+            "negotiate": "Negotiate",
+            "ntlm": "Negotiate",
+            "kerberos": "Kerberos",
+            "credssp": "CredSSP",
         }[self.protocol]
 
     def reset(self):
@@ -158,10 +155,10 @@ class _NegotiateAuthBase:
     ):
         cbt = None
         ssl_object = None
-        if hasattr(connection, 'socket'):
-            ssl_object = connection.socket.stream_writer.get_extra_info('ssl_object')
+        if hasattr(connection, "socket"):
+            ssl_object = connection.socket.stream_writer.get_extra_info("ssl_object")
 
-        if ssl_object and not self._disable_cbt and self.protocol != 'credssp':
+        if ssl_object and not self._disable_cbt and self.protocol != "credssp":
             cert = ssl_object.getpeercert(True)
             cert_hash = get_tls_server_end_point_hash(cert)
             cbt = spnego.channel_bindings.GssChannelBindings(application_data=b"tls-server-end-point:" + cert_hash)
@@ -172,7 +169,7 @@ class _NegotiateAuthBase:
         if self._encrypt:
             spnego_options |= spnego.NegotiateOptions.wrapping_winrm
 
-        if self.protocol == 'credssp':
+        if self.protocol == "credssp":
             if self._credssp_allow_tlsv1:
                 spnego_options |= spnego.NegotiateOptions.credssp_allow_tlsv1
 
@@ -183,27 +180,27 @@ class _NegotiateAuthBase:
             context_req |= spnego.ContextReq.delegate
 
         username, password = self._credential
-        auth_hostname = self._hostname_override or hostname.decode('utf-8')
+        auth_hostname = self._hostname_override or hostname.decode("utf-8")
         return spnego.client(
-            username, password, hostname=auth_hostname,
-            service=self._service, channel_bindings=cbt, context_req=context_req,
-            protocol=self.protocol, options=spnego_options
+            username,
+            password,
+            hostname=auth_hostname,
+            service=self._service,
+            channel_bindings=cbt,
+            context_req=context_req,
+            protocol=self.protocol,
+            options=spnego_options,
         )
 
-    def _add_header(
-        self,
-        headers: httpx.Headers,
-        token: bytes,
-        authz_header: str
-    ):
-        headers[authz_header] = f'{self._auth_header} {base64.b64encode(token).decode()}'
+    def _add_header(self, headers: httpx.Headers, token: bytes, authz_header: str):
+        headers[authz_header] = f"{self._auth_header} {base64.b64encode(token).decode()}"
 
     def _get_header_token(
         self,
         headers: httpx.Headers,
         auths_header: str,
     ) -> typing.Optional[bytes]:
-        auths = headers.get(auths_header, '')
+        auths = headers.get(auths_header, "")
         in_token = WWW_AUTH_PATTERN.search(auths)
         if in_token:
             in_token = base64.b64decode(in_token.group(2))
@@ -218,53 +215,48 @@ class _NegotiateAuthBase:
         return in_token
 
     def _wrap(
-            self,
-            headers: Headers,
-            data: typing.Optional[bytearray] = None,
+        self,
+        headers: Headers,
+        data: typing.Optional[bytearray] = None,
     ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
         temp_headers = httpx.Headers(headers)
 
         if self._encrypt and data:
             protocol = {
-                'kerberos': 'Kerberos',
-                'credssp': 'CredSSP',
-            }.get(self.protocol, 'SPNEGO')
+                "kerberos": "Kerberos",
+                "credssp": "CredSSP",
+            }.get(self.protocol, "SPNEGO")
 
             enc_data, content_type = encrypt_wsman(
-                data, temp_headers['Content-Type'],
-                f'application/HTTP-{protocol}-session-encrypted',
-                self._context
+                data, temp_headers["Content-Type"], f"application/HTTP-{protocol}-session-encrypted", self._context
             )
-            temp_headers['Content-Type'] = content_type
-            temp_headers['Content-Length'] = str(len(enc_data))
+            temp_headers["Content-Type"] = content_type
+            temp_headers["Content-Length"] = str(len(enc_data))
 
             stream = PlainByteStream(enc_data)
 
         elif not data:
-            temp_headers['Content-Length'] = '0'
+            temp_headers["Content-Length"] = "0"
 
         return temp_headers, stream
 
     def _unwrap(
-            self,
-            headers: Headers,
-            data: bytearray,
+        self,
+        headers: Headers,
+        data: bytearray,
     ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
         temp_headers = httpx.Headers(headers)
 
-        content_type = temp_headers.get('Content-Type', '')
+        content_type = temp_headers.get("Content-Type", "")
 
         # A proxy will have these content types but cannot do the encryption so
         # we must also check for self._encrypt.
-        if (
-            self._encrypt and (
-                content_type.startswith('multipart/encrypted;') or
-                content_type.startswith('multipart/x-multi-encrypted;')
-            )
+        if self._encrypt and (
+            content_type.startswith("multipart/encrypted;") or content_type.startswith("multipart/x-multi-encrypted;")
         ):
             data, content_type = decrypt_wsman(data, content_type, self._context)
-            temp_headers['Content-Length'] = str(len(data))
-            temp_headers['Content-Type'] = content_type
+            temp_headers["Content-Length"] = str(len(data))
+            temp_headers["Content-Type"] = content_type
 
         return temp_headers, PlainByteStream(bytes(data))
 
@@ -274,24 +266,22 @@ class AsyncNegotiateAuth(_NegotiateAuthBase, AsyncAuth):
     SUPPORTS_ENCRYPTION = True
 
     async def arequest(
-            self,
-            connection: AsyncHTTPTransport,
-            method: bytes,
-            url: URL,
-            headers: Headers = None,
-            stream: AsyncByteStream = None,
-            ext: typing.Dict = None,
-            auths_header: str = WWW_AUTHS,
-            authz_header: str = WWW_AUTHZ,
+        self,
+        connection: AsyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: Headers = None,
+        stream: AsyncByteStream = None,
+        ext: typing.Dict = None,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
         if not self._complete:
-            self._context = await _async_wrap(
-                self._build_context, connection, url[1]
-            )
+            self._context = await _async_wrap(self._build_context, connection, url[1])
 
             status_code = 500
             resp_headers = httpx.Headers()
-            resp_stream = PlainByteStream(b'')
+            resp_stream = PlainByteStream(b"")
 
             send_headers, send_stream = await self._wrap_stream(headers, stream)
             in_token = None
@@ -325,9 +315,9 @@ class AsyncNegotiateAuth(_NegotiateAuthBase, AsyncAuth):
         return status_code, headers.raw, stream, ext
 
     async def _wrap_stream(
-            self,
-            headers: Headers,
-            stream: typing.Optional[AsyncByteStream] = None,
+        self,
+        headers: Headers,
+        stream: typing.Optional[AsyncByteStream] = None,
     ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
         data = bytearray()
         if self._encrypt and stream:
@@ -337,9 +327,9 @@ class AsyncNegotiateAuth(_NegotiateAuthBase, AsyncAuth):
         return self._wrap(headers, data)
 
     async def _unwrap_stream(
-            self,
-            headers: Headers,
-            stream: AsyncByteStream,
+        self,
+        headers: Headers,
+        stream: AsyncByteStream,
     ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
         data = bytearray()
         async for chunk in stream:
@@ -370,7 +360,7 @@ class SyncNegotiateAuth(_NegotiateAuthBase, SyncAuth):
 
             status_code = 500
             resp_headers = httpx.Headers()
-            resp_stream = PlainByteStream(b'')
+            resp_stream = PlainByteStream(b"")
 
             send_headers, send_stream = self._wrap_stream(headers, stream)
             in_token = None
@@ -396,17 +386,15 @@ class SyncNegotiateAuth(_NegotiateAuthBase, SyncAuth):
                 return status_code, resp_headers.raw, resp_stream, ext
 
         headers, stream = self._wrap_stream(headers, stream)
-        status_code, headers, stream, ext = connection.request(
-            method, url, headers=headers.raw, stream=stream, ext=ext
-        )
+        status_code, headers, stream, ext = connection.request(method, url, headers=headers.raw, stream=stream, ext=ext)
         headers, stream = self._unwrap_stream(headers, stream)
 
         return status_code, headers.raw, stream, ext
 
     def _wrap_stream(
-            self,
-            headers: Headers,
-            stream: typing.Optional[SyncByteStream] = None,
+        self,
+        headers: Headers,
+        stream: typing.Optional[SyncByteStream] = None,
     ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
         data = bytearray()
         if self._encrypt and stream:
@@ -416,9 +404,9 @@ class SyncNegotiateAuth(_NegotiateAuthBase, SyncAuth):
         return self._wrap(headers, data)
 
     def _unwrap_stream(
-            self,
-            headers: Headers,
-            stream: SyncByteStream,
+        self,
+        headers: Headers,
+        stream: SyncByteStream,
     ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
         data = bytearray()
         for chunk in stream:
@@ -430,15 +418,14 @@ class SyncNegotiateAuth(_NegotiateAuthBase, SyncAuth):
 
 
 class _BasicAuthBase:
-
     def __init__(
         self,
         username: str,
         password: str,
     ):
         super().__init__(self)
-        credential = f'{username or ""}:{password or ""}'.encode('utf-8')
-        self._token = f'Basic {base64.b64encode(credential).decode()}'
+        credential = f'{username or ""}:{password or ""}'.encode("utf-8")
+        self._token = f"Basic {base64.b64encode(credential).decode()}"
 
     def _add_header(
         self,
@@ -452,27 +439,29 @@ class _BasicAuthBase:
 
 
 class AsyncBasicAuth(_BasicAuthBase, AsyncAuth):
-
     async def arequest(
-            self,
-            connection: AsyncHTTPTransport,
-            method: bytes,
-            url: URL,
-            headers: Headers = None,
-            stream: AsyncByteStream = None,
-            ext: typing.Dict = None,
-            auths_header: str = WWW_AUTHS,
-            authz_header: str = WWW_AUTHZ,
+        self,
+        connection: AsyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: Headers = None,
+        stream: AsyncByteStream = None,
+        ext: typing.Dict = None,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
         self._add_header(headers, authz_header)
 
         return await connection.arequest(
-            method, url, headers=headers.raw, stream=stream, ext=ext,
+            method,
+            url,
+            headers=headers.raw,
+            stream=stream,
+            ext=ext,
         )
 
 
 class SyncBasicAuth(_BasicAuthBase, SyncAuth):
-
     def request(
         self,
         connection: SyncHTTPTransport,
@@ -486,6 +475,4 @@ class SyncBasicAuth(_BasicAuthBase, SyncAuth):
     ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
         self._add_header(headers, authz_header)
 
-        return connection.request(
-            method, url, headers=headers.raw, stream=stream, ext=ext
-        )
+        return connection.request(method, url, headers=headers.raw, stream=stream, ext=ext)

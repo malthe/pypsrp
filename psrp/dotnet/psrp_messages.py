@@ -72,13 +72,14 @@ class SessionCapability(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.3.10.1 CurrentSystemTimeZone:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/5e6263c5-358a-459b-a49e-0707e383eb55
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00010002,
         extended_properties=[
-            PSNoteProperty('PSVersion', mandatory=True, ps_type=PSVersion),
-            PSNoteProperty('protocolversion', mandatory=True, ps_type=PSVersion),
-            PSNoteProperty('SerializationVersion', mandatory=True, ps_type=PSVersion),
-            PSNoteProperty('TimeZone', optional=True, ps_type=PSByteArray),
+            PSNoteProperty("PSVersion", mandatory=True, ps_type=PSVersion),
+            PSNoteProperty("protocolversion", mandatory=True, ps_type=PSVersion),
+            PSNoteProperty("SerializationVersion", mandatory=True, ps_type=PSVersion),
+            PSNoteProperty("TimeZone", optional=True, ps_type=PSByteArray),
         ],
     )
 
@@ -102,15 +103,16 @@ class InitRunspacePool(PSObject, metaclass=_PSMetaTypePSRP):
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c867589a-0b43-47bd-9abf-7477699ff6c9
 
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00010004,
         extended_properties=[
-            PSNoteProperty('MinRunspaces', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('MaxRunspaces', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('PSThreadOptions', mandatory=True, ps_type=PSThreadOptions),
-            PSNoteProperty('ApartmentState', mandatory=True, ps_type=ApartmentState),
-            PSNoteProperty('HostInfo', mandatory=True, ps_type=HostInfo),
-            PSNoteProperty('ApplicationArguments', mandatory=True, ps_type=PSPrimitiveDictionary),
+            PSNoteProperty("MinRunspaces", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("MaxRunspaces", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("PSThreadOptions", mandatory=True, ps_type=PSThreadOptions),
+            PSNoteProperty("ApartmentState", mandatory=True, ps_type=ApartmentState),
+            PSNoteProperty("HostInfo", mandatory=True, ps_type=HostInfo),
+            PSNoteProperty("ApplicationArguments", mandatory=True, ps_type=PSPrimitiveDictionary),
         ],
     )
 
@@ -127,11 +129,12 @@ class PublicKey(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.3 - PUBLIC_KEY:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3efa4b90-c089-432b-91db-76a3deb175bc
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00010005,
         extended_properties=[
-            PSNoteProperty('PublicKey', mandatory=True, ps_type=PSString),
-        ]
+            PSNoteProperty("PublicKey", mandatory=True, ps_type=PSString),
+        ],
     )
 
 
@@ -154,11 +157,12 @@ class EncryptedSessionKey(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.4 - ENCRYPTED_SESSION_KEY:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e3e155af-b379-40cf-80c0-14a124145147
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00010006,
         extended_properties=[
-            PSNoteProperty('EncryptedSessionKey', mandatory=True, ps_type=PSString),
-        ]
+            PSNoteProperty("EncryptedSessionKey", mandatory=True, ps_type=PSString),
+        ],
     )
 
 
@@ -172,9 +176,10 @@ class PublicKeyRequest(_PSStringBase, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.5 - PUBLIC_KEY_REQUEST:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9ff2857d-a7cb-4da6-81f1-65d08b3dbe63
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00010007,
-        tag='S',
+        tag="S",
     )
 
 
@@ -191,12 +196,13 @@ class SetMaxRunspaces(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.6 - SET_MAX_RUNSPACES:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/92037046-043a-4962-8e7e-2d457249548b
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021002,
         extended_properties=[
-            PSNoteProperty('MaxRunspaces', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('ci', mandatory=True, ps_type=PSInt64),
-        ]
+            PSNoteProperty("MaxRunspaces", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
+        ],
     )
 
 
@@ -213,12 +219,13 @@ class SetMinRunspaces(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.7 - SET_MIN_RUNSPACES:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2d425c82-ead1-4888-911a-b11f545ca441
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021003,
         extended_properties=[
-            PSNoteProperty('MinRunspaces', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('ci', mandatory=True, ps_type=PSInt64),
-        ]
+            PSNoteProperty("MinRunspaces", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
+        ],
     )
 
 
@@ -240,11 +247,12 @@ class RunspaceAvailability(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.8 - RUNSPACE_AVAILABILITY:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bcab75d9-31a8-4fdc-a8c4-00f41e5985d2
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021004,
         extended_properties=[
-            PSNoteProperty('SetMinMaxRunspacesResponse', mandatory=True),
-            PSNoteProperty('ci', mandatory=True, ps_type=PSInt64),
+            PSNoteProperty("SetMinMaxRunspacesResponse", mandatory=True),
+            PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
         ],
     )
 
@@ -268,11 +276,12 @@ class RunspacePoolState(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.3.4 RunspacePoolState:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b05495bc-a9b2-4794-9f43-4bf1f3633900
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021005,
         extended_properties=[
-            PSNoteProperty('RunspaceState', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('ExceptionAsErrorRecord', optional=True, ps_type=ComplexErrorRecord),
+            PSNoteProperty("RunspaceState", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("ExceptionAsErrorRecord", optional=True, ps_type=ComplexErrorRecord),
         ],
     )
 
@@ -298,16 +307,17 @@ class CreatePipeline(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.10 CREATE_PIPELINE:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2cf8cccb-63ab-404a-82df-caef0c41717a
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021006,
         extended_properties=[
-            PSNoteProperty('NoInput', mandatory=True, ps_type=PSBool),
-            PSNoteProperty('ApartmentState', mandatory=True, ps_type=ApartmentState),
-            PSNoteProperty('RemoteStreamOptions', mandatory=True, ps_type=RemoteStreamOptions),
-            PSNoteProperty('AddToHistory', mandatory=True, ps_type=PSBool),
-            PSNoteProperty('HostInfo', mandatory=True, ps_type=HostInfo),
-            PSNoteProperty('PowerShell', mandatory=True),
-            PSNoteProperty('IsNested', mandatory=True, ps_type=PSBool),
+            PSNoteProperty("NoInput", mandatory=True, ps_type=PSBool),
+            PSNoteProperty("ApartmentState", mandatory=True, ps_type=ApartmentState),
+            PSNoteProperty("RemoteStreamOptions", mandatory=True, ps_type=RemoteStreamOptions),
+            PSNoteProperty("AddToHistory", mandatory=True, ps_type=PSBool),
+            PSNoteProperty("HostInfo", mandatory=True, ps_type=HostInfo),
+            PSNoteProperty("PowerShell", mandatory=True),
+            PSNoteProperty("IsNested", mandatory=True, ps_type=PSBool),
         ],
     )
 
@@ -324,10 +334,11 @@ class GetAvailableRunspaces(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.11 GET_AVAILABLE_RUNSPACES:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3f4d5a5c-9e7f-4ea2-8fea-253ddd394638
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021007,
         extended_properties=[
-            PSNoteProperty('ci', mandatory=True, ps_type=PSInt64),
+            PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
         ],
     )
 
@@ -351,42 +362,45 @@ class UserEvent(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.12 USER_EVENT:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c5a79f22-715d-4221-ae4d-47c685197b3b
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021008,
         extended_properties=[
-            PSNoteProperty('PSEventArgs.EventIdentifier', ps_type=PSInt),
-            PSNoteProperty('PSEventArgs.SourceIdentifier', ps_type=PSString),
-            PSNoteProperty('PSEventArgs.TimeGenerated', ps_type=PSDateTime),
-            PSNoteProperty('PSEventArgs.Sender'),
-            PSNoteProperty('PSEventArgs.SourceArgs', mandatory=True),
-            PSNoteProperty('PSEventArgs.MessageData'),
-            PSNoteProperty('PSEventArgs.ComputerName', ps_type=PSString),
-            PSNoteProperty('PSEventArgs.RunspaceId', ps_type=PSGuid),
+            PSNoteProperty("PSEventArgs.EventIdentifier", ps_type=PSInt),
+            PSNoteProperty("PSEventArgs.SourceIdentifier", ps_type=PSString),
+            PSNoteProperty("PSEventArgs.TimeGenerated", ps_type=PSDateTime),
+            PSNoteProperty("PSEventArgs.Sender"),
+            PSNoteProperty("PSEventArgs.SourceArgs", mandatory=True),
+            PSNoteProperty("PSEventArgs.MessageData"),
+            PSNoteProperty("PSEventArgs.ComputerName", ps_type=PSString),
+            PSNoteProperty("PSEventArgs.RunspaceId", ps_type=PSGuid),
         ],
     )
 
     # Use custom __init__ to make it easier to specify the properties (without the 'PSEventArgs.' prefix).
     def __init__(
-            self,
-            EventIdentifier: typing.Optional[PSInt] = None,
-            SourceIdentifier: typing.Optional[PSString] = None,
-            TimeGenerated: typing.Optional[PSDateTime] = None,
-            Sender: typing.Optional['PSObject'] = None,
-            SourceArgs: typing.Optional['PSObject'] = None,
-            MessageData: typing.Optional['PSObject'] = None,
-            ComputerName: typing.Optional[PSString] = None,
-            RunspaceId: typing.Optional[PSGuid] = None,
+        self,
+        EventIdentifier: typing.Optional[PSInt] = None,
+        SourceIdentifier: typing.Optional[PSString] = None,
+        TimeGenerated: typing.Optional[PSDateTime] = None,
+        Sender: typing.Optional["PSObject"] = None,
+        SourceArgs: typing.Optional["PSObject"] = None,
+        MessageData: typing.Optional["PSObject"] = None,
+        ComputerName: typing.Optional[PSString] = None,
+        RunspaceId: typing.Optional[PSGuid] = None,
     ):
-        super().__init__(**{
-            'PSEventArgs.EventIdentifier': EventIdentifier,
-            'PSEventArgs.SourceIdentifier': SourceIdentifier,
-            'PSEventArgs.TimeGenerated': TimeGenerated,
-            'PSEventArgs.Sender': Sender,
-            'PSEventArgs.SourceArgs': SourceArgs,
-            'PSEventArgs.MessageData': MessageData,
-            'PSEventArgs.ComputerName': ComputerName,
-            'PSEventArgs.RunspaceId': RunspaceId,
-        })
+        super().__init__(
+            **{
+                "PSEventArgs.EventIdentifier": EventIdentifier,
+                "PSEventArgs.SourceIdentifier": SourceIdentifier,
+                "PSEventArgs.TimeGenerated": TimeGenerated,
+                "PSEventArgs.Sender": Sender,
+                "PSEventArgs.SourceArgs": SourceArgs,
+                "PSEventArgs.MessageData": MessageData,
+                "PSEventArgs.ComputerName": ComputerName,
+                "PSEventArgs.RunspaceId": RunspaceId,
+            }
+        )
 
 
 class ApplicationPrivateData(PSObject, metaclass=_PSMetaTypePSRP):
@@ -404,10 +418,11 @@ class ApplicationPrivateData(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.13 APPLICATION_PRIVATE_DATA:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f0e105d4-4242-429f-b63b-a600111fb27e
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021009,
         extended_properties=[
-            PSNoteProperty('ApplicationPrivateData', mandatory=True, ps_type=PSPrimitiveDictionary),
+            PSNoteProperty("ApplicationPrivateData", mandatory=True, ps_type=PSPrimitiveDictionary),
         ],
     )
 
@@ -430,13 +445,14 @@ class GetCommandMetadata(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.14 GET_COMMAND_METADATA:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b634ddef-93a0-4d3b-9e63-a630d01f233a
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x0002100A,
         extended_properties=[
-            PSNoteProperty('Name', ps_type=PSList),
-            PSNoteProperty('CommandType', ps_type=CommandTypes),
-            PSNoteProperty('Namespace', ps_type=PSList),
-            PSNoteProperty('ArgumentList', ps_type=PSList),
+            PSNoteProperty("Name", ps_type=PSList),
+            PSNoteProperty("CommandType", ps_type=CommandTypes),
+            PSNoteProperty("Namespace", ps_type=PSList),
+            PSNoteProperty("ArgumentList", ps_type=PSList),
         ],
     )
 
@@ -455,12 +471,13 @@ class RunspacePoolHostCall(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.15 RUNSPACEPOOL_HOST_CALL:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4623540b-4dd3-440e-a54b-e0fb87dd92c8
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021100,
         extended_properties=[
-            PSNoteProperty('ci', mandatory=True, ps_type=PSInt64),
-            PSNoteProperty('mi', mandatory=True, ps_type=HostMethodIdentifier),
-            PSNoteProperty('mp', mandatory=True, ps_type=PSList),
+            PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
+            PSNoteProperty("mi", mandatory=True, ps_type=HostMethodIdentifier),
+            PSNoteProperty("mp", mandatory=True, ps_type=PSList),
         ],
     )
 
@@ -480,13 +497,14 @@ class RunspacePoolHostResponse(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.16 RUNSPACEPOOL_HOST_RESPONSE:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9bcdf122-ad6b-45c3-9960-68d22627cdb5
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00021101,
         extended_properties=[
-            PSNoteProperty('ci', mandatory=True, ps_type=PSInt64),
-            PSNoteProperty('mi', mandatory=True, ps_type=HostMethodIdentifier),
-            PSNoteProperty('mr', optional=True),
-            PSNoteProperty('me', optional=True, ps_type=ComplexErrorRecord),
+            PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
+            PSNoteProperty("mi", mandatory=True, ps_type=HostMethodIdentifier),
+            PSNoteProperty("mr", optional=True),
+            PSNoteProperty("me", optional=True, ps_type=ComplexErrorRecord),
         ],
     )
 
@@ -501,6 +519,7 @@ class PipelineInput(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.17 PIPELINE_INPUT:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2c08acdd-3443-48c2-bf87-8fe2808d96ea
     """
+
     PSObject = PSObjectMetaPSRP(psrp_message_type=0x00041002)
 
 
@@ -513,6 +532,7 @@ class EndOfPipelineInput(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.18 END_OF_PIPELINE_INPUT:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e616e6fd-0241-4823-b415-7dfc247646f1
     """
+
     PSObject = PSObjectMetaPSRP(psrp_message_type=0x00041003)
 
 
@@ -526,6 +546,7 @@ class PipelineOutput(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.19 PIPELINE_OUTPUT:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3b2c1076-c435-4aef-bdfe-3179bc452723
     """
+
     PSObject = PSObjectMetaPSRP(psrp_message_type=0x00041004)
 
 
@@ -538,6 +559,7 @@ class ErrorRecord(ComplexErrorRecord, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.20 ERROR_RECORD:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c527797a-d017-4755-8a81-9f58280a7135
     """
+
     PSObject = PSObjectMetaPSRP(psrp_message_type=0x00041005)
 
 
@@ -561,11 +583,12 @@ class PipelineState(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.3.5 PSInvocationState:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/acaa253a-29be-45fd-911c-6715515a28b9
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00041006,
         extended_properties=[
-            PSNoteProperty('PipelineState', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('ExceptionAsErrorRecord', optional=True, ps_type=ComplexErrorRecord),
+            PSNoteProperty("PipelineState", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("ExceptionAsErrorRecord", optional=True, ps_type=ComplexErrorRecord),
         ],
     )
 
@@ -579,9 +602,10 @@ class DebugRecord(InformationalRecord, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.22 DEBUG_RECORD:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/43b4cb30-6b14-498b-9325-c60339838a22
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00041007,
-        type_names=['System.Management.Automation.DebugRecord'],
+        type_names=["System.Management.Automation.DebugRecord"],
     )
 
 
@@ -594,9 +618,10 @@ class VerboseRecord(InformationalRecord, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.23 VERBOSE_RECORD:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f94b18f5-0bd4-4817-8184-eb72767cce94
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00041008,
-        type_names=['System.Management.Automation.VerboseRecord'],
+        type_names=["System.Management.Automation.VerboseRecord"],
     )
 
 
@@ -609,9 +634,10 @@ class WarningRecord(InformationalRecord, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.24 WARNING_RECORD:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/31c10c51-b831-475c-ae62-603426e6a617
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00041009,
-        type_names=['System.Management.Automation.WarningRecord'],
+        type_names=["System.Management.Automation.WarningRecord"],
     )
 
 
@@ -639,17 +665,18 @@ class ProgressRecord(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.25 PROGRESS_RECORD:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/435ab824-1069-43eb-8146-7c50593a47ac
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00041010,
         extended_properties=[
-            PSNoteProperty('Activity', ps_type=PSString),
-            PSNoteProperty('ActivityId', ps_type=PSInt),
-            PSNoteProperty('StatusDescription', ps_type=PSString),
-            PSNoteProperty('CurrentOperation', ps_type=PSString),
-            PSNoteProperty('ParentActivityId', ps_type=PSInt),
-            PSNoteProperty('PercentComplete', ps_type=PSInt),
-            PSNoteProperty('Type', ps_type=ProgressRecordType),
-            PSNoteProperty('SecondsRemaining', ps_type=PSInt),
+            PSNoteProperty("Activity", ps_type=PSString),
+            PSNoteProperty("ActivityId", ps_type=PSInt),
+            PSNoteProperty("StatusDescription", ps_type=PSString),
+            PSNoteProperty("CurrentOperation", ps_type=PSString),
+            PSNoteProperty("ParentActivityId", ps_type=PSInt),
+            PSNoteProperty("PercentComplete", ps_type=PSInt),
+            PSNoteProperty("Type", ps_type=ProgressRecordType),
+            PSNoteProperty("SecondsRemaining", ps_type=PSInt),
         ],
     )
 
@@ -680,22 +707,23 @@ class InformationRecord(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.26 INFORMATION_RECORD:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/5a3ec5f0-4654-4d87-830c-d3e07c4717c9
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00041011,
         type_names=[
-            'System.Management.Automation.InformationRecord',
-            'System.Object',
+            "System.Management.Automation.InformationRecord",
+            "System.Object",
         ],
         extended_properties=[
-            PSNoteProperty('MessageData'),
-            PSNoteProperty('Source', ps_type=PSString),
-            PSNoteProperty('TimeGenerated', ps_type=PSDateTime),
-            PSNoteProperty('Tags', ps_type=PSGenericList[PSString]),
-            PSNoteProperty('User', ps_type=PSString),
-            PSNoteProperty('Computer', ps_type=PSString),
-            PSNoteProperty('ProcessId', ps_type=PSUInt),
-            PSNoteProperty('NativeThreadId', ps_type=PSUInt),
-            PSNoteProperty('ManagedThreadId', ps_type=PSUInt),
+            PSNoteProperty("MessageData"),
+            PSNoteProperty("Source", ps_type=PSString),
+            PSNoteProperty("TimeGenerated", ps_type=PSDateTime),
+            PSNoteProperty("Tags", ps_type=PSGenericList[PSString]),
+            PSNoteProperty("User", ps_type=PSString),
+            PSNoteProperty("Computer", ps_type=PSString),
+            PSNoteProperty("ProcessId", ps_type=PSUInt),
+            PSNoteProperty("NativeThreadId", ps_type=PSUInt),
+            PSNoteProperty("ManagedThreadId", ps_type=PSUInt),
         ],
     )
 
@@ -714,6 +742,7 @@ class PipelineHostCall(RunspacePoolHostCall):
     .. _MS-PSRP 2.2.2.27 PIPELINE_HOST_CALL:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/16947dfb-99b5-461f-b556-dec1beb33da8
     """
+
     PSObject = PSObjectMetaPSRP(psrp_message_type=0x00041100)
 
 
@@ -732,6 +761,7 @@ class PipelineHostResponse(RunspacePoolHostResponse):
     .. _MS-PSRP 2.2.2.28 PIPELINE_HOST_RESPONSE:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d4298dce-ee0d-417d-a73a-b4ad26524e3b
     """
+
     PSObject = PSObjectMetaPSRP(psrp_message_type=0x00041101)
 
 
@@ -751,28 +781,29 @@ class ConnectRunspacePool(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.29 CONNECT_RUNSPACEPOOL:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9192146c-81b5-4abd-9b20-a56df272b95e
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x00010008,
         extended_properties=[
-            PSNoteProperty('MinRunspaces', ps_type=PSInt),
-            PSNoteProperty('MaxRunspaces', ps_type=PSInt),
+            PSNoteProperty("MinRunspaces", ps_type=PSInt),
+            PSNoteProperty("MaxRunspaces", ps_type=PSInt),
         ],
     )
 
     @classmethod
     def ToPSObjectForRemoting(
-            cls,
-            instance: 'ConnectRunspacePool',
+        cls,
+        instance: "ConnectRunspacePool",
     ) -> PSObject:
         use_string = True
         obj = PSObject()
 
         if instance.MinRunspaces:
-            add_note_property(obj, 'MinRunspaces', instance.MinRunspaces, PSInt)
+            add_note_property(obj, "MinRunspaces", instance.MinRunspaces, PSInt)
             use_string = False
 
         if instance.MaxRunspaces:
-            add_note_property(obj, 'MaxRunspaces', instance.MaxRunspaces, PSInt)
+            add_note_property(obj, "MaxRunspaces", instance.MaxRunspaces, PSInt)
             use_string = False
 
         # This is a weird object, will be '<S />' if neither count is specified.
@@ -795,11 +826,12 @@ class RunspacePoolInitData(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.30 RUNSPACEPOOL_INIT_DATA:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ee0ce0cb-2523-4d43-b8e8-049bb89112ad
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x0002100B,
         extended_properties=[
-            PSNoteProperty('MinRunspaces', mandatory=True, ps_type=PSInt),
-            PSNoteProperty('MaxRunspaces', mandatory=True, ps_type=PSInt),
+            PSNoteProperty("MinRunspaces", mandatory=True, ps_type=PSInt),
+            PSNoteProperty("MaxRunspaces", mandatory=True, ps_type=PSInt),
         ],
     )
 
@@ -819,17 +851,19 @@ class ResetRunspaceState(PSObject, metaclass=_PSMetaTypePSRP):
     .. _MS-PSRP 2.2.2.31 RESET_RUNSPACE_STATE:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/dc353f4b-c2e1-4172-a6ea-f72d7ef7c6bd
     """
+
     PSObject = PSObjectMetaPSRP(
         psrp_message_type=0x0002100C,
         extended_properties=[
-            PSNoteProperty('ci', mandatory=True, ps_type=PSInt64),
+            PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
         ],
     )
 
 
 # This enum is dynamically built based on the registered PSObject with the psrp_message_type info
-PSRPMessageType = enum.Enum('PSRPMessageType', {c.__name__: i for i, c in TypeRegistry().psrp_registry.items()},
-                            module=__name__)
+PSRPMessageType = enum.Enum(
+    "PSRPMessageType", {c.__name__: i for i, c in TypeRegistry().psrp_registry.items()}, module=__name__
+)
 """PSRP Mesage types.
 
 The PowerShell Remoting Protocol message types identifiers. Each value

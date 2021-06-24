@@ -10,7 +10,7 @@ import typing
 
 
 # TODO: Remove once Python 3.6 is dropped.
-if hasattr(contextlib, 'asynccontextmanager'):
+if hasattr(contextlib, "asynccontextmanager"):
     asynccontextmanager = contextlib.asynccontextmanager
 
 else:
@@ -18,11 +18,11 @@ else:
 
 
 def asyncio_create_task(
-        coro: typing.Awaitable,
+    coro: typing.Awaitable,
 ) -> asyncio.Task:
-    """ Replicates asyncio.create_task for Python 3.6+. """
+    """Replicates asyncio.create_task for Python 3.6+."""
     # TODO: Remove once Python 3.6 is dropped.
-    if hasattr(asyncio, 'create_task'):
+    if hasattr(asyncio, "create_task"):
         return asyncio.create_task(coro)
 
     else:
@@ -32,9 +32,9 @@ def asyncio_create_task(
 
 
 def iscoroutinefunction(
-        value: typing.Any,
+    value: typing.Any,
 ) -> bool:
-    """ Checks if a function is a coroutine even when wrapped by functools. """
+    """Checks if a function is a coroutine even when wrapped by functools."""
     # TODO: Remove once Python 3.8 is minimum
     while isinstance(value, functools.partial):
         value = value.func

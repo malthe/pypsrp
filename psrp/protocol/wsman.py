@@ -28,29 +28,29 @@ log = logging.getLogger(__name__)
 # [MS-WSMV] 2.2.1 Namespaces
 # https://msdn.microsoft.com/en-us/library/ee878420.aspx
 NAMESPACES = {
-    's': 'http://www.w3.org/2003/05/soap-envelope',
-    'xs': 'http://www.w3.org/2001/XMLSchema',
-    'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-    'wsa': 'http://schemas.xmlsoap.org/ws/2004/08/addressing',
-    'wsman': 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd',
-    'wsmid': 'http://schemas.dmtf.org/wbem/wsman/identify/1/wsmanidentity.xsd',
-    'wsmanfault': 'http://schemas.microsoft.com/wbem/wsman/1/wsmanfault',
-    'cim': 'http://schemas.dmtf.org/wbem/wscim/1/common',
-    'wsmv': 'http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd',
-    'cfg': 'http://schemas.microsoft.com/wbem/wsman/1/config',
-    'sub': 'http://schemas.microsoft.com/wbem/wsman/1/subscription',
-    'rsp': 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell',
-    'm': 'http://schemas.microsoft.com/wbem/wsman/1/machineid',
-    'cert': 'http://schemas.microsoft.com/wbem/wsman/1/config/service/certmapping',
-    'plugin': 'http://schemas.microsoft.com/wbem/wsman/1/config/PluginConfiguration',
-    'wsen': 'http://schemas.xmlsoap.org/ws/2004/09/enumeration',
-    'wsdl': 'http://schemas.xmlsoap.org/wsdl',
-    'wst': 'http://schemas.xmlsoap.org/ws/2004/09/transfer',
-    'wsp': 'http://schemas.xmlsoap.org/ws/2004/09/policy',
-    'wse': 'http://schemas.xmlsoap.org/ws/2004/08/eventing',
-    'i': 'http://schemas.microsoft.com/wbem/wsman/1/cim/interactive.xsd',
-    'xml': 'http://www.w3.org/XML/1998/namespace',
-    'pwsh': 'http://schemas.microsoft.com/powershell',
+    "s": "http://www.w3.org/2003/05/soap-envelope",
+    "xs": "http://www.w3.org/2001/XMLSchema",
+    "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+    "wsa": "http://schemas.xmlsoap.org/ws/2004/08/addressing",
+    "wsman": "http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd",
+    "wsmid": "http://schemas.dmtf.org/wbem/wsman/identify/1/wsmanidentity.xsd",
+    "wsmanfault": "http://schemas.microsoft.com/wbem/wsman/1/wsmanfault",
+    "cim": "http://schemas.dmtf.org/wbem/wscim/1/common",
+    "wsmv": "http://schemas.microsoft.com/wbem/wsman/1/wsman.xsd",
+    "cfg": "http://schemas.microsoft.com/wbem/wsman/1/config",
+    "sub": "http://schemas.microsoft.com/wbem/wsman/1/subscription",
+    "rsp": "http://schemas.microsoft.com/wbem/wsman/1/windows/shell",
+    "m": "http://schemas.microsoft.com/wbem/wsman/1/machineid",
+    "cert": "http://schemas.microsoft.com/wbem/wsman/1/config/service/certmapping",
+    "plugin": "http://schemas.microsoft.com/wbem/wsman/1/config/PluginConfiguration",
+    "wsen": "http://schemas.xmlsoap.org/ws/2004/09/enumeration",
+    "wsdl": "http://schemas.xmlsoap.org/wsdl",
+    "wst": "http://schemas.xmlsoap.org/ws/2004/09/transfer",
+    "wsp": "http://schemas.xmlsoap.org/ws/2004/09/policy",
+    "wse": "http://schemas.xmlsoap.org/ws/2004/08/eventing",
+    "i": "http://schemas.microsoft.com/wbem/wsman/1/cim/interactive.xsd",
+    "xml": "http://www.w3.org/XML/1998/namespace",
+    "pwsh": "http://schemas.microsoft.com/powershell",
 }
 # Register well known namespace prefixes so ElementTree doesn't randomly generate them, saving packet space.
 [ElementTree.register_namespace(k, v) for k, v in NAMESPACES.items()]
@@ -69,6 +69,7 @@ class SignalCode(enum.Enum):
 
     The control code to send in a Signal message to the server
     """
+
     ctrl_c = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/ctrl_c"
     ctrl_break = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/ctrl_break"
     terminate = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/Terminate"
@@ -81,7 +82,7 @@ class _WSManEventRegistry(type):
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        uri = getattr(cls, 'URI', None)
+        uri = getattr(cls, "URI", None)
         if uri is None:
             return
 
@@ -89,13 +90,13 @@ class _WSManEventRegistry(type):
             cls.__registry[uri] = cls
 
     def __call__(
-            cls,
-            data: typing.Union[bytes, ElementTree.Element],
+        cls,
+        data: typing.Union[bytes, ElementTree.Element],
     ):
         if isinstance(data, bytes):
             data = ElementTree.fromstring(data)
 
-        action = data.find('s:Header/wsa:Action', namespaces=NAMESPACES).text
+        action = data.find("s:Header/wsa:Action", namespaces=NAMESPACES).text
         new_cls = cls.__registry.get(action, cls)
         return super(_WSManEventRegistry, new_cls).__call__(data)
 
@@ -105,25 +106,24 @@ class _WSManEventRegistry(type):
 
 
 class WSManEvent(metaclass=_WSManEventRegistry):
-
     def __init__(
-            self,
-            data: ElementTree.Element,
+        self,
+        data: ElementTree.Element,
     ):
         self._raw = data
 
     @property
     def header(self) -> ElementTree.Element:
-        return self._raw.find('s:Header', namespaces=NAMESPACES)
+        return self._raw.find("s:Header", namespaces=NAMESPACES)
 
     @property
     def body(self) -> ElementTree.Element:
-        return self._raw.find('s:Body', namespaces=NAMESPACES)
+        return self._raw.find("s:Body", namespaces=NAMESPACES)
 
     @property
     def message_id(self) -> str:
         # The XML element text starts with uuid: which we want to remove
-        return self._raw.find('s:Header/wsa:MessageID', namespaces=NAMESPACES).text[5:].upper()
+        return self._raw.find("s:Header/wsa:MessageID", namespaces=NAMESPACES).text[5:].upper()
 
 
 class WSManEventResponse(WSManEvent):
@@ -131,161 +131,161 @@ class WSManEventResponse(WSManEvent):
 
 
 class GetEvent(WSManEvent):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Get'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/Get"
 
 
 class GetResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/GetResponse'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/GetResponse"
 
 
 class PutEvent(WSManEvent):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Put'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/Put"
 
 
 class PutResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/PutResponse'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/PutResponse"
 
 
 class CreateEvent(WSManEvent):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Create'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/Create"
 
 
 class CreateResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/CreateResponse'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/CreateResponse"
 
 
 class DeleteEvent(WSManEvent):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/Delete"
 
 
 class DeleteResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/transfer/DeleteResponse'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/transfer/DeleteResponse"
 
 
 class EnumerateEvent(WSManEvent):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/enumeration/Enumerate"
 
 
 class EnumerateResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/EnumerateResponse'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/enumeration/EnumerateResponse"
 
     @property
     def items(self) -> typing.List[ElementTree.Element]:
-        return self._raw.find('s:Body/wsen:EnumerateResponse/wsman:Items', namespaces=NAMESPACES) or []
+        return self._raw.find("s:Body/wsen:EnumerateResponse/wsman:Items", namespaces=NAMESPACES) or []
 
 
 class FaultEvent(WSManEventResponse):
-    URI = 'http://schemas.dmtf.org/wbem/wsman/1/wsman/fault'
+    URI = "http://schemas.dmtf.org/wbem/wsman/1/wsman/fault"
 
     def __init__(
-            self,
-            data: ElementTree.Element,
+        self,
+        data: ElementTree.Element,
     ):
         super().__init__(data)
         self.error = _parse_wsman_fault(data)
 
 
 class PullEvent(WSManEvent):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Pull'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/enumeration/Pull"
 
 
 class PullResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.xmlsoap.org/ws/2004/09/enumeration/PullResponse'
+    URI = "http://schemas.xmlsoap.org/ws/2004/09/enumeration/PullResponse"
 
 
 class CommandEvent(WSManEvent):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command"
 
 
 class CommandResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandResponse'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/CommandResponse"
 
     @property
     def command_id(self) -> str:
-        return self._raw.find('s:Body/rsp:CommandResponse/rsp:CommandId', namespaces=NAMESPACES).text
+        return self._raw.find("s:Body/rsp:CommandResponse/rsp:CommandId", namespaces=NAMESPACES).text
 
 
 class ConnectEvent(WSManEvent):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Connect'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Connect"
 
 
 class ConnectResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ConnectResponse'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ConnectResponse"
 
 
 class DisconnectEvent(WSManEvent):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Disconnect'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Disconnect"
 
 
 class DisconnectResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/DisconnectResponse'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/DisconnectResponse"
 
 
 class ReceiveEvent(WSManEvent):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Receive"
 
 
 class ReceiveResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ReceiveResponse'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ReceiveResponse"
 
     @property
     def exit_code(self) -> typing.Optional[int]:
-        rc = self._raw.find('s:Body/rsp:ReceiveResponse/rsp:CommandState/rsp:ExitCode', namespaces=NAMESPACES)
+        rc = self._raw.find("s:Body/rsp:ReceiveResponse/rsp:CommandState/rsp:ExitCode", namespaces=NAMESPACES)
         if rc is not None:
             return int(rc.text)
 
     @property
     def command_state(self) -> typing.Optional[CommandState]:
-        command_state = self._raw.find('s:Body/rsp:ReceiveResponse/rsp:CommandState', namespaces=NAMESPACES)
+        command_state = self._raw.find("s:Body/rsp:ReceiveResponse/rsp:CommandState", namespaces=NAMESPACES)
         if command_state is not None:
-            return CommandState(command_state.attrib['State'])
+            return CommandState(command_state.attrib["State"])
 
     def get_streams(self) -> typing.Dict[str, typing.List[bytes]]:
         buffer = {}
-        streams = self._raw.findall('s:Body/rsp:ReceiveResponse/rsp:Stream', namespaces=NAMESPACES)
+        streams = self._raw.findall("s:Body/rsp:ReceiveResponse/rsp:Stream", namespaces=NAMESPACES)
         for stream in streams:
-            stream_name = stream.attrib['Name']
+            stream_name = stream.attrib["Name"]
             if stream_name not in buffer:
                 buffer[stream_name] = []
 
             if stream.text is not None:
-                stream_value = base64.b64decode(stream.text.encode('utf-8'))
+                stream_value = base64.b64decode(stream.text.encode("utf-8"))
                 buffer[stream_name].append(stream_value)
 
         return buffer
 
 
 class ReconnectEvent(WSManEvent):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Reconnect'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Reconnect"
 
 
 class ReconnectResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ReconnectResponse'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/ReconnectResponse"
 
 
 class SendEvent(WSManEvent):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Send"
 
 
 class SendResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/SendResponse'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/SendResponse"
 
 
 class SignalEvent(WSManEvent):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Signal"
 
 
 class SignalResponseEvent(WSManEventResponse):
-    URI = 'http://schemas.microsoft.com/wbem/wsman/1/windows/shell/SignalResponse'
+    URI = "http://schemas.microsoft.com/wbem/wsman/1/windows/shell/SignalResponse"
 
 
 # Build the WSManAction enum from the registered event types.
-WSManAction = enum.Enum('WSManAction', _WSManEventRegistry.registry_entries(), module=__name__)
-_WSManActionMap = {a.name.lower()[:-5]: a for a in WSManAction if not a.name.endswith('Response')}
+WSManAction = enum.Enum("WSManAction", _WSManEventRegistry.registry_entries(), module=__name__)
+_WSManActionMap = {a.name.lower()[:-5]: a for a in WSManAction if not a.name.endswith("Response")}
 
 
 class _WSManSet:
-    """ Selector or OptionSet class for WSMan requests. """
+    """Selector or OptionSet class for WSMan requests."""
 
     def __init__(self, element_name, child_element_name, must_understand):
         self.element_name = element_name
@@ -307,11 +307,11 @@ class _WSManSet:
         self.values.append((name, value, attributes))
 
     def pack(self):
-        s = NAMESPACES['s']
-        wsman = NAMESPACES['wsman']
+        s = NAMESPACES["s"]
+        wsman = NAMESPACES["wsman"]
         element = ElementTree.Element("{%s}%s" % (wsman, self.element_name))
         if self.must_understand:
-            element.attrib['{%s}mustUnderstand' % s] = "true"
+            element.attrib["{%s}mustUnderstand" % s] = "true"
 
         for key, value, attributes in self.values:
             ElementTree.SubElement(
@@ -322,13 +322,11 @@ class _WSManSet:
 
 
 class OptionSet(_WSManSet):
-
     def __init__(self):
         super().__init__("OptionSet", "Option", True)
 
 
 class SelectorSet(_WSManSet):
-
     def __init__(self):
         super().__init__("SelectorSet", "Selector", False)
 
@@ -351,12 +349,12 @@ class WSMan:
     """
 
     def __init__(
-            self,
-            connection_uri: str,
-            max_envelope_size: int = 153600,
-            operation_timeout: int = 20,
-            locale: str = 'en-US',
-            data_locale: typing.Optional[str] = None,
+        self,
+        connection_uri: str,
+        max_envelope_size: int = 153600,
+        operation_timeout: int = 20,
+        locale: str = "en-US",
+        data_locale: typing.Optional[str] = None,
     ):
         self.connection_uri = connection_uri
         self.session_id = str(uuid.uuid4())
@@ -376,11 +374,12 @@ class WSMan:
 
         def invoke_action(*args, **kwargs):
             return self._invoke(_WSManActionMap[item], *args, **kwargs)
+
         return invoke_action
 
     def data_to_send(
-            self,
-            amount: typing.Optional[int] = None,
+        self,
+        amount: typing.Optional[int] = None,
     ) -> bytes:
         if amount is None:
             amount = len(self._data_to_send)
@@ -390,8 +389,8 @@ class WSMan:
         return data
 
     def receive_data(
-            self,
-            data: bytes,
+        self,
+        data: bytes,
     ) -> WSManEvent:
         event = WSManEvent(data)
 
@@ -409,74 +408,63 @@ class WSMan:
         return event
 
     def _create_header(
-            self,
-            action: WSManAction,
-            resource_uri: str,
-            option_set: typing.Optional[OptionSet] = None,
-            selector_set: typing.Optional[SelectorSet] = None,
-            timeout: typing.Optional[int] = None,
+        self,
+        action: WSManAction,
+        resource_uri: str,
+        option_set: typing.Optional[OptionSet] = None,
+        selector_set: typing.Optional[SelectorSet] = None,
+        timeout: typing.Optional[int] = None,
     ) -> typing.Tuple[ElementTree.Element, str]:
-        """ Creates a WSMan envelope header based on the configured setup. """
-        log.debug("Creating WSMan header (Action: %s, Resource URI: %s, Option Set: %s, Selector Set: %s"
-                  % (action, resource_uri, option_set, selector_set))
-        s = NAMESPACES['s']
-        wsa = NAMESPACES['wsa']
-        wsman = NAMESPACES['wsman']
-        wsmv = NAMESPACES['wsmv']
-        xml = NAMESPACES['xml']
+        """Creates a WSMan envelope header based on the configured setup."""
+        log.debug(
+            "Creating WSMan header (Action: %s, Resource URI: %s, Option Set: %s, Selector Set: %s"
+            % (action, resource_uri, option_set, selector_set)
+        )
+        s = NAMESPACES["s"]
+        wsa = NAMESPACES["wsa"]
+        wsman = NAMESPACES["wsman"]
+        wsmv = NAMESPACES["wsmv"]
+        xml = NAMESPACES["xml"]
 
         header = ElementTree.Element("{%s}Header" % s)
 
         ElementTree.SubElement(
-            header,
-            "{%s}Action" % wsa,
-            attrib={"{%s}mustUnderstand" % s: "true"}
+            header, "{%s}Action" % wsa, attrib={"{%s}mustUnderstand" % s: "true"}
         ).text = action.value
 
         ElementTree.SubElement(
             header,
             "{%s}DataLocale" % wsmv,
-            attrib={"{%s}mustUnderstand" % s: "false", "{%s}lang" % xml: self.data_locale}
+            attrib={"{%s}mustUnderstand" % s: "false", "{%s}lang" % xml: self.data_locale},
         )
 
         ElementTree.SubElement(
-            header,
-            "{%s}Locale" % wsman,
-            attrib={"{%s}mustUnderstand" % s: "false", "{%s}lang" % xml: self.locale}
+            header, "{%s}Locale" % wsman, attrib={"{%s}mustUnderstand" % s: "false", "{%s}lang" % xml: self.locale}
         )
 
         ElementTree.SubElement(
-            header,
-            "{%s}MaxEnvelopeSize" % wsman,
-            attrib={"{%s}mustUnderstand" % s: "true"}
+            header, "{%s}MaxEnvelopeSize" % wsman, attrib={"{%s}mustUnderstand" % s: "true"}
         ).text = str(self.max_envelope_size)
 
         message_id = str(uuid.uuid4()).upper()
         ElementTree.SubElement(header, "{%s}MessageID" % wsa).text = "uuid:%s" % message_id
 
-        ElementTree.SubElement(
-            header,
-            "{%s}OperationTimeout" % wsman
-        ).text = "PT%sS" % str(timeout or self.operation_timeout)
+        ElementTree.SubElement(header, "{%s}OperationTimeout" % wsman).text = "PT%sS" % str(
+            timeout or self.operation_timeout
+        )
 
         reply_to = ElementTree.SubElement(header, "{%s}ReplyTo" % wsa)
         ElementTree.SubElement(
-            reply_to,
-            "{%s}Address" % wsa,
-            attrib={"{%s}mustUnderstand" % s: "true"}
+            reply_to, "{%s}Address" % wsa, attrib={"{%s}mustUnderstand" % s: "true"}
         ).text = "http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous"
 
         ElementTree.SubElement(
-            header,
-            "{%s}ResourceURI" % wsman,
-            attrib={"{%s}mustUnderstand" % s: "true"}
+            header, "{%s}ResourceURI" % wsman, attrib={"{%s}mustUnderstand" % s: "true"}
         ).text = resource_uri
 
-        ElementTree.SubElement(
-            header,
-            "{%s}SessionId" % wsmv,
-            attrib={"{%s}mustUnderstand" % s: "false"}
-        ).text = "uuid:%s" % str(self.session_id).upper()
+        ElementTree.SubElement(header, "{%s}SessionId" % wsmv, attrib={"{%s}mustUnderstand" % s: "false"}).text = (
+            "uuid:%s" % str(self.session_id).upper()
+        )
 
         ElementTree.SubElement(header, "{%s}To" % wsa).text = self.connection_uri
 
@@ -489,15 +477,15 @@ class WSMan:
         return header, message_id
 
     def _invoke(
-            self,
-            action: WSManAction,
-            resource_uri: str,
-            resource: typing.Optional[ElementTree.Element] = None,
-            option_set: typing.Optional[OptionSet] = None,
-            selector_set: typing.Optional[SelectorSet] = None,
-            timeout: typing.Optional[int] = None
+        self,
+        action: WSManAction,
+        resource_uri: str,
+        resource: typing.Optional[ElementTree.Element] = None,
+        option_set: typing.Optional[OptionSet] = None,
+        selector_set: typing.Optional[SelectorSet] = None,
+        timeout: typing.Optional[int] = None,
     ):
-        s = NAMESPACES['s']
+        s = NAMESPACES["s"]
         envelope = ElementTree.Element("{%s}Envelope" % s)
 
         header, message_id = self._create_header(action, resource_uri, option_set, selector_set, timeout)
@@ -506,27 +494,27 @@ class WSMan:
         if resource is not None:
             body.append(resource)
 
-        content = ElementTree.tostring(envelope, encoding='utf-8', method='xml')
+        content = ElementTree.tostring(envelope, encoding="utf-8", method="xml")
         self._data_to_send += content
 
 
 def _build_connection_uri(
-        server: str,
-        ssl: bool = False,
-        port: typing.Optional[int] = None,
-        path: typing.Optional[int] = None,
+    server: str,
+    ssl: bool = False,
+    port: typing.Optional[int] = None,
+    path: typing.Optional[int] = None,
 ) -> ParseResult:
-    """ Builds the connection URI for WSMan. """
+    """Builds the connection URI for WSMan."""
     parsed_server = urlparse(server)
 
     # If the scheme (http:|https:) was specified then we use the URL literally.
     if parsed_server.scheme:
         return parsed_server
 
-    scheme = 'https' if ssl else 'http'
+    scheme = "https" if ssl else "http"
 
     if port is None:
-        port = 5985 if scheme == 'http' else 5986
+        port = 5985 if scheme == "http" else 5986
 
     # Check if the server is an IPv6 Address, enclose in [] if it is
     try:
@@ -534,18 +522,16 @@ def _build_connection_uri(
     except ipaddress.AddressValueError:
         pass
     else:
-        server = '[%s]' % address.compressed
+        server = "[%s]" % address.compressed
 
     if not path:
-        path = 'wsman'
+        path = "wsman"
 
-    return urlparse('%s://%s:%s/%s' % (scheme, server, port, path))
+    return urlparse("%s://%s:%s/%s" % (scheme, server, port, path))
 
 
-def _parse_wsman_fault(
-        envelope: ElementTree.Element
-) -> WSManFault:
-    """ Processes a WSManFault response into a structure exception object. """
+def _parse_wsman_fault(envelope: ElementTree.Element) -> WSManFault:
+    """Processes a WSManFault response into a structure exception object."""
     xml = envelope
     code = None
     reason = None
@@ -572,8 +558,8 @@ def _parse_wsman_fault(
 
     wsman_fault = fault.find("s:Detail/wsmanfault:WSManFault", namespaces=NAMESPACES)
     if wsman_fault is not None:
-        code = wsman_fault.attrib.get('Code', code)
-        machine = wsman_fault.attrib.get('Machine')
+        code = wsman_fault.attrib.get("Code", code)
+        machine = wsman_fault.attrib.get("Machine")
 
         message_info = wsman_fault.find("wsmanfault:Message", namespaces=NAMESPACES)
         if message_info is not None:
@@ -582,11 +568,11 @@ def _parse_wsman_fault(
 
         provider_info = wsman_fault.find("wsmanfault:Message/wsmanfault:ProviderFault", namespaces=NAMESPACES)
         if provider_info is not None:
-            provider = provider_info.attrib.get('provider')
-            provider_path = provider_info.attrib.get('path')
-            provider_fault = [provider_info.text or '']
+            provider = provider_info.attrib.get("provider")
+            provider_path = provider_info.attrib.get("path")
+            provider_fault = [provider_info.text or ""]
             for fault_entry in provider_info:
-                fault_info = ElementTree.tostring(fault_entry, encoding='utf-8', method='xml').decode('utf-8')
+                fault_info = ElementTree.tostring(fault_entry, encoding="utf-8", method="xml").decode("utf-8")
                 provider_fault.append(fault_info)
 
             provider_fault = ", ".join([f.strip() for f in provider_fault if f.strip()])
@@ -603,5 +589,11 @@ def _parse_wsman_fault(
     if provider_fault:
         provider_fault = provider_fault.strip()
 
-    return WSManFault(code=code, machine=machine, reason=reason, provider=provider, provider_path=provider_path,
-                      provider_fault=provider_fault)
+    return WSManFault(
+        code=code,
+        machine=machine,
+        reason=reason,
+        provider=provider,
+        provider_path=provider_path,
+        provider_fault=provider_fault,
+    )
