@@ -90,6 +90,7 @@ stages:
       displayName: Install
 
     - script: |
+        poetry run python -m black --check .
         poetry run pycodestyle pypsrp --verbose --show-source --statistics --max-line-length 119
       displayName: Lint
 
@@ -161,6 +162,7 @@ stages:
       displayName: Install
 
     - script: |
+        poetry run python -m black --check .
         poetry run python -m pycodestyle pypsrp --verbose --show-source --statistics --max-line-length 119
       displayName: Lint
 
@@ -223,4 +225,3 @@ stages:
         python -m twine upload -r pypi --config-file $(PYPIRC_PATH) dist/*
       condition: and(succeeded(), startsWith(variables['build.sourceBranch'], 'refs/tags/v'))
       displayName: Publish artifact to Pypi
-

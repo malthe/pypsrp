@@ -2,6 +2,7 @@
     "editor.formatOnSave": true,
     "files.trimTrailingWhitespace": true,
     "editor.trimAutoWhitespace": true,
+    "python.formatting.provider": "black",
     "python.testing.pytestArgs": [
         "tests",
         "-vv"
