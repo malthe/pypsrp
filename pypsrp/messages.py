@@ -1,7 +1,6 @@
 # Copyright: (c) 2018, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
-import enum
 import logging
 import struct
 import uuid
@@ -19,13 +18,13 @@ from pypsrp._utils import to_string
 log = logging.getLogger(__name__)
 
 
-class Destination(enum.IntEnum):
+class Destination(object):
     # The destination of a PSRP message
     CLIENT = 0x00000001
     SERVER = 0x00000002
 
 
-class MessageType(enum.IntEnum):
+class MessageType(object):
     """
     [MS-PSRP] 2.2.1 PowerShell Remoting Protocol Message - MessageType
     https://msdn.microsoft.com/en-us/library/dd303832.aspx

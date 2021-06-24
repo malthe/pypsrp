@@ -411,7 +411,10 @@ class Pipeline(ComplexObject):
                     name="Cmds",
                     list_value_meta=ObjectMeta("Obj", object=Command),
                     list_types=[
-                        "System.Collections.Generic.List`1[System.Management.Automation.PSObject]",
+                        "System.Collections.Generic.List`1[["
+                        "System.Management.Automation.PSObject, "
+                        "System.Management.Automation, Version=1.0.0.0, "
+                        "Culture=neutral, PublicKeyToken=31bf3856ad364e35]]",
                         "System.Object",
                     ]
                 )),
@@ -431,7 +434,11 @@ class Pipeline(ComplexObject):
         """
         super(Pipeline, self).__init__()
         cmd_types = [
-            "System.Collections.Generic.List`1[System.Management.Automation.PSObject]",
+            "System.Collections.Generic.List`1[["
+            "System.Management.Automation.PSObject, "
+            "System.Management.Automation, "
+            "Version=1.0.0.0, Culture=neutral, "
+            "PublicKeyToken=31bf3856ad364e35]]",
             "System.Object",
         ]
 
@@ -547,7 +554,11 @@ class Command(ComplexObject):
         """
         super(Command, self).__init__()
         arg_types = [
-            "System.Collections.Generic.List`1[System.Management.Automation.PSObject]",
+            "System.Collections.Generic.List`1[["
+            "System.Management.Automation.PSObject, "
+            "System.Management.Automation, "
+            "Version=1.0.0.0, Culture=neutral, "
+            "PublicKeyToken=31bf3856ad364e35]]",
             "System.Object",
         ]
         extended_properties = [
