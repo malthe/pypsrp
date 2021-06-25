@@ -4,7 +4,6 @@
 
 import abc
 
-import httpcore
 import httpx
 import re
 import struct
@@ -12,13 +11,13 @@ import typing
 
 from urllib.parse import urlparse
 
-from .._wsman._async import (
+from .._wsman._transport import (
     AsyncWSManTransport,
 )
 
 from .._wsman._auth import (
-    AsyncBasicAuth,
-    AsyncNegotiateAuth,
+    BasicAuth,
+    NegotiateAuth,
 )
 
 
@@ -136,7 +135,7 @@ class AsyncWSManConnection(WSManConnectionBase):
 
         auth = auth.lower()
         if auth == "basic":
-            auth = AsyncBasicAuth(username, password)
+            auth = BasicAuth(username, password)
 
         elif auth == "certificate":
             headers["Authorization"] = "http://schemas.dmtf.org/wbem/wsman/1/wsman/secprofile/https/mutual"
@@ -146,7 +145,7 @@ class AsyncWSManConnection(WSManConnectionBase):
             auth = None
 
         elif auth in ["credssp", "kerberos", "negotiate", "ntlm"]:
-            auth = AsyncNegotiateAuth(
+            auth = NegotiateAuth(
                 credential=(username, password),
                 protocol=auth,
                 encrypt=encrypt,
@@ -166,10 +165,10 @@ class AsyncWSManConnection(WSManConnectionBase):
 
         proxy_auth = proxy_auth.lower() if proxy_auth else None
         if proxy_auth == "basic":
-            proxy_auth = AsyncBasicAuth(proxy_username, proxy_password)
+            proxy_auth = BasicAuth(proxy_username, proxy_password)
 
         elif proxy_auth in ["kerberos", "negotiate", "ntlm"]:
-            proxy_auth = AsyncNegotiateAuth(
+            proxy_auth = NegotiateAuth(
                 credential=(proxy_username, proxy_password),
                 protocol=proxy_auth,
                 encrypt=False,

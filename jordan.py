@@ -151,154 +151,223 @@ async def a_main():
         # Process
         # async_psrp(AsyncProcessInfo()),
         # SSH
-        # async_psrp(AsyncSSHInfo('test.wsman.env',
-        #                        username='vagrant',
-        #                        password='vagrant')),
+        # async_psrp(AsyncSSHInfo("test.wsman.env", username="vagrant", password="vagrant")),
         # I was hoping this would work but it doesn't, need to play around with this some more locally
-        # async_psrp(AsyncSSHInfo('test.wsman.env',
-        #                        username='vagrant',
-        #                        password='vagrant',
-        #                        executable='powershell.exe',
-        #                        arguments=['-Version', '5.1', '-NoLogo', '-NoProfile', '-s'])),
+        # async_psrp(
+        #     AsyncSSHInfo(
+        #         "test.wsman.env",
+        #         username="vagrant",
+        #         password="vagrant",
+        #         executable="powershell.exe",
+        #         arguments=["-Version", "5.1", "-NoLogo", "-NoProfile", "-s"],
+        #     )
+        # ),
         # This does work and it's essentially the same as the subsystem stuff
-        async_psrp(
-            AsyncSSHInfo(
-                "test.wsman.env",
-                username="vagrant",
-                password="vagrant",
-                executable="powershell.exe",
-                arguments=["-Version", "5.1", "-NoLogo", "-s"],
-            )
-        ),
+        # async_psrp(
+        #    AsyncSSHInfo(
+        #        "test.wsman.env",
+        #        username="vagrant",
+        #        password="vagrant",
+        #        executable="powershell.exe",
+        #        arguments=["-Version", "5.1", "-NoLogo", "-s"],
+        #    )
+        # ),
         # WSMan Scenarios
         ### No Proxy ###
         # http_nego_none_none
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29936/wsman')),
+        # async_psrp(AsyncWSManInfo(f"http://test.wsman.env:29936/wsman")),
         # https_nego_none_none
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29900/wsman',
-        #                          verify=cert_ca_path)),
+        # async_psrp(AsyncWSManInfo(f"https://test.wsman.env:29900/wsman", verify=cert_ca_path)),
         # http_ntlm_none_none
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29936/wsman',
-        #                          auth='ntlm',
-        #                          username='vagrant-domain@WSMAN.ENV',
-        #                          password='VagrantPass1')),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://test.wsman.env:29936/wsman",
+        #         auth="ntlm",
+        #         username="vagrant-domain@WSMAN.ENV",
+        #         password="VagrantPass1",
+        #     )
+        # ),
         # https_ntlm_none_none
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29900/wsman',
-        #                          auth='ntlm',
-        #                          username='vagrant-domain@WSMAN.ENV',
-        #                          password='VagrantPass1',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29900/wsman",
+        #         auth="ntlm",
+        #         username="vagrant-domain@WSMAN.ENV",
+        #         password="VagrantPass1",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         ### Anonymous Proxy ###
         # http_nego_http_anon
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29938/wsman',
-        #                          proxy='http://squid.wsman.env:3129/')),
+        # async_psrp(AsyncWSManInfo(f"http://test.wsman.env:29938/wsman", proxy="http://squid.wsman.env:3129/")),
         # http_nego_https_anon
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29938/wsman',
-        #                          proxy='https://squid.wsman.env:3130/',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://test.wsman.env:29938/wsman", proxy="https://squid.wsman.env:3130/", verify=cert_ca_path
+        #     )
+        # ),
         # https_nego_http_anon
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29902/wsman',
-        #                          proxy='http://squid.wsman.env:3129/',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29902/wsman", proxy="http://squid.wsman.env:3129/", verify=cert_ca_path
+        #     )
+        # ),
         # https_nego_https_anon
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29902/wsman',
-        #                          proxy='https://squid.wsman.env:3130/',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29902/wsman", proxy="https://squid.wsman.env:3130/", verify=cert_ca_path
+        #     )
+        # ),
         ### Basic Proxy ###
         # http_nego_http_basic
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29938/wsman',
-        #                          proxy='http://squid.wsman.env:3129/',
-        #                          proxy_auth='basic',
-        #                          proxy_username='proxy_username',
-        #                          proxy_password='proxy_password')),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://test.wsman.env:29938/wsman",
+        #         proxy="http://squid.wsman.env:3129/",
+        #         proxy_auth="basic",
+        #         proxy_username="proxy_username",
+        #         proxy_password="proxy_password",
+        #     )
+        # ),
         # http_nego_https_basic
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29938/wsman',
-        #                          proxy='https://squid.wsman.env:3130/',
-        #                          proxy_auth='basic',
-        #                          proxy_username='proxy_username',
-        #                          proxy_password='proxy_password',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://test.wsman.env:29938/wsman",
+        #         proxy="https://squid.wsman.env:3130/",
+        #         proxy_auth="basic",
+        #         proxy_username="proxy_username",
+        #         proxy_password="proxy_password",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         # https_nego_http_basic
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29902/wsman',
-        #                          proxy='http://squid.wsman.env:3129/',
-        #                          proxy_auth='basic',
-        #                          proxy_username='proxy_username',
-        #                          proxy_password='proxy_password',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29902/wsman",
+        #         proxy="http://squid.wsman.env:3129/",
+        #         proxy_auth="basic",
+        #         proxy_username="proxy_username",
+        #         proxy_password="proxy_password",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         # https_nego_https_basic
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29902/wsman',
-        #                          proxy='https://squid.wsman.env:3130/',
-        #                          proxy_auth='basic',
-        #                          proxy_username='proxy_username',
-        #                          proxy_password='proxy_password',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29902/wsman",
+        #         proxy="https://squid.wsman.env:3130/",
+        #         proxy_auth="basic",
+        #         proxy_username="proxy_username",
+        #         proxy_password="proxy_password",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         ### Negotiate Proxy ###
         # http_nego_http_kerb
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29938/wsman',
-        #                          proxy='http://squid.wsman.env:3135/',
-        #                          proxy_auth='negotiate')),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://test.wsman.env:29938/wsman", proxy="http://squid.wsman.env:3135/", proxy_auth="negotiate"
+        #     )
+        # ),
         # http_nego_https_kerb
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29938/wsman',
-        #                          proxy='https://squid.wsman.env:3136/',
-        #                          proxy_auth='negotiate',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://test.wsman.env:29938/wsman",
+        #         proxy="https://squid.wsman.env:3136/",
+        #         proxy_auth="negotiate",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         # https_nego_http_kerb
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29902/wsman',
-        #                          proxy='http://squid.wsman.env:3135/',
-        #                          proxy_auth='negotiate',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29902/wsman",
+        #         proxy="http://squid.wsman.env:3135/",
+        #         proxy_auth="negotiate",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         # https_nego_https_kerb
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29902/wsman',
-        #                          proxy='https://squid.wsman.env:3136/',
-        #                          proxy_auth='negotiate',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29902/wsman",
+        #         proxy="https://squid.wsman.env:3136/",
+        #         proxy_auth="negotiate",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         ### SOCKS Proxy ###
         # http_nego_socks5_anon
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29938/wsman',
-        #                          proxy='socks5://127.0.0.1:53547/')),
+        # async_psrp(AsyncWSManInfo(f"http://test.wsman.env:29938/wsman", proxy="socks5://127.0.0.1:53547/")),
         # https_nego_socks5_anon
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29902/wsman',
-        #                          proxy='socks5://127.0.0.1:53547/',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29902/wsman", proxy="socks5://127.0.0.1:53547/", verify=cert_ca_path
+        #     )
+        # ),
         # http_nego_socks5h_anon
-        # async_psrp(AsyncWSManInfo(f'http://remote-res.wsman.env:29938/wsman',
-        #                          proxy='socks5h://127.0.0.1:53547/',
-        #                          auth='ntlm',
-        #                          username='vagrant-domain@WSMAN.ENV',
-        #                          password='VagrantPass1')),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://remote-res.wsman.env:29938/wsman",
+        #         proxy="socks5h://127.0.0.1:53547/",
+        #         auth="ntlm",
+        #         username="vagrant-domain@WSMAN.ENV",
+        #         password="VagrantPass1",
+        #     )
+        # ),
         # https_nego_socks5h_anon
-        # async_psrp(AsyncWSManInfo(f'https://remote-res.wsman.env:29902/wsman',
-        #                          proxy='socks5h://127.0.0.1:53547/',
-        #                          auth='ntlm',
-        #                          username='vagrant-domain@WSMAN.ENV',
-        #                          password='VagrantPass1',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://remote-res.wsman.env:29902/wsman",
+        #         proxy="socks5h://127.0.0.1:53547/",
+        #         auth="ntlm",
+        #         username="vagrant-domain@WSMAN.ENV",
+        #         password="VagrantPass1",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         # http_basic_none_none
-        # async_psrp(AsyncWSManInfo(f'http://test.wsman.env:29936/wsman',
-        #                          auth='basic',
-        #                          username='ansible',
-        #                          password='Password123!',
-        #                          encryption='never')),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"http://test.wsman.env:29936/wsman",
+        #         auth="basic",
+        #         username="ansible",
+        #         password="Password123!",
+        #         encryption="never",
+        #     )
+        # ),
         # https_basic_none_none
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29900/wsman',
-        #                          auth='basic',
-        #                          username='ansible',
-        #                          password='Password123!',
-        #                          verify=cert_ca_path)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29900/wsman",
+        #         auth="basic",
+        #         username="ansible",
+        #         password="Password123!",
+        #         verify=cert_ca_path,
+        #     )
+        # ),
         # https_cert_none_none
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29900/wsman',
-        #                          auth='certificate',
-        #                          verify=cert_ca_path,
-        #                          certificate_pem=cert_auth_pem,
-        #                          certificate_key_pem=cert_auth_key_pem)),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29900/wsman",
+        #         auth="certificate",
+        #         verify=cert_ca_path,
+        #         certificate_pem=cert_auth_pem,
+        #         certificate_key_pem=cert_auth_key_pem,
+        #     )
+        # ),
         # https_certpass_none_none
-        # async_psrp(AsyncWSManInfo(f'https://test.wsman.env:29900/wsman',
-        #                          auth='certificate',
-        #                          verify=cert_ca_path,
-        #                          certificate_pem=cert_auth_pem,
-        #                          certificate_key_pem=cert_auth_key_pass_pem,
-        #                          certificate_password='password')),
-        # async_reconnection(AsyncWSManInfo(f'http://{endpoint}:5985/wsman')),
+        # async_psrp(
+        #     AsyncWSManInfo(
+        #         f"https://test.wsman.env:29900/wsman",
+        #         auth="certificate",
+        #         verify=cert_ca_path,
+        #         certificate_pem=cert_auth_pem,
+        #         certificate_key_pem=cert_auth_key_pass_pem,
+        #         certificate_password="password",
+        #     )
+        # ),
+        # async_reconnection(AsyncWSManInfo(f"http://{endpoint}:5985/wsman")),
     )
 
 

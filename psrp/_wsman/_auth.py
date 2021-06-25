@@ -15,12 +15,9 @@ import typing
 from httpcore import (
     AsyncByteStream,
     AsyncHTTPTransport,
+    ByteStream,
     SyncByteStream,
     SyncHTTPTransport,
-)
-
-from ._bytestreams import (
-    PlainByteStream,
 )
 
 from ._encryption import (
@@ -50,57 +47,49 @@ def _async_wrap(func, *args, **kwargs):
     return task
 
 
-class AsyncAuth:
+class _AuthBase:
+    """Base authentication handler for the WSMan transports."""
 
     SUPPORTS_ENCRYPTION = False
 
-    async def arequest(
-        self,
-        connection: AsyncHTTPTransport,
-        method: bytes,
-        url: URL,
-        headers: Headers = None,
-        stream: AsyncByteStream = None,
-        ext: typing.Dict = None,
-        auths_header: str = WWW_AUTHS,
-        authz_header: str = WWW_AUTHZ,
-    ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
-        return await connection.arequest(method, url, headers=headers, stream=stream, ext=ext)
-
-    def reset(self):
-        pass
-
-
-class SyncAuth:
-
-    SUPPORTS_ENCRYPTION = False
-
-    def request(
+    def handle_request(
         self,
         connection: SyncHTTPTransport,
         method: bytes,
         url: URL,
-        headers: Headers = None,
-        stream: SyncByteStream = None,
-        ext: typing.Dict = None,
+        headers: Headers,
+        stream: SyncByteStream,
+        extensions: typing.Dict,
         auths_header: str = WWW_AUTHS,
         authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
-        return connection.request(method, url, headers=headers, stream=stream, ext=ext)
+        return connection.handle_request(method, url, headers, stream, extensions)
+
+    async def handle_async_request(
+        self,
+        connection: AsyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: AsyncByteStream,
+        extensions: typing.Dict,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
+    ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
+        return await connection.handle_async_request(method, url, headers, stream, extensions)
 
     def reset(self):
         pass
 
 
-class AsyncNoAuth(AsyncAuth):
-    pass
+class NoAuth(_AuthBase):
+    """Authentication handler that is no-op and doesn't provide any authentication on HTTP requests."""
 
 
-class SyncNoAuth(SyncAuth):
-    pass
+class NegotiateAuth(_AuthBase):
 
+    SUPPORTS_ENCRYPTION = True
 
-class _NegotiateAuthBase:
     def __init__(
         self,
         credential: typing.Any = None,
@@ -113,13 +102,18 @@ class _NegotiateAuthBase:
         credssp_allow_tlsv1: bool = False,
         credssp_require_kerberos: bool = False,
     ):
-        super().__init__(self)
         valid_protocols = ["kerberos", "negotiate", "ntlm", "credssp"]
         if protocol not in valid_protocols:
             raise ValueError(f"{type(self).__name__} protocol only supports {', '.join(valid_protocols)}")
 
         self.protocol = protocol.lower()
 
+        self._auth_header = {
+            "negotiate": "Negotiate",
+            "ntlm": "Negotiate",
+            "kerberos": "Kerberos",
+            "credssp": "CredSSP",
+        }[self.protocol]
         self._context = None
         self.__complete = False
         self._credential = credential
@@ -133,16 +127,104 @@ class _NegotiateAuthBase:
 
     @property
     def _complete(self) -> bool:
+        """Whether the authentication process is complete."""
         return self.__complete or (self._context and self._context.complete)
 
-    @property
-    def _auth_header(self) -> str:
-        return {
-            "negotiate": "Negotiate",
-            "ntlm": "Negotiate",
-            "kerberos": "Kerberos",
-            "credssp": "CredSSP",
-        }[self.protocol]
+    def handle_request(
+        self,
+        connection: SyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: SyncByteStream,
+        extensions: typing.Dict,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
+    ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
+        if not self._complete:
+            self._context = self._build_context(connection, url[1])
+
+            status_code = 500
+            resp_headers = httpx.Headers()
+            resp_stream = ByteStream(b"")
+
+            send_headers, send_stream = self._wrap(headers, stream.read())
+            in_token = None
+
+            while not self._context.complete:
+                out_token = self._context.step(in_token)
+                if not out_token:
+                    break
+
+                self._add_header(send_headers, out_token, authz_header)
+                status_code, resp_headers, resp_stream, extensions = connection.handle_request(
+                    method, url, send_headers.raw, send_stream, extensions
+                )
+                headers, resp_stream = self._unwrap(resp_headers, resp_stream.read())
+
+                # If we didn't encrypt then the response from the auth phase
+                # contains our actual response. Also pass along any errors back.
+                in_token = self._get_header_token(resp_headers, auths_header)
+                if not in_token:
+                    break
+
+            if not self._encrypt or status_code != 200:
+                return status_code, resp_headers.raw, resp_stream, extensions
+
+        headers, stream = self._wrap(headers, stream.read())
+        status_code, headers, stream, extensions = connection.request(method, url, headers.raw, stream, extensions)
+        headers, stream = self._unwrap(headers, stream.read())
+
+        return status_code, headers.raw, stream, extensions
+
+    async def handle_async_request(
+        self,
+        connection: AsyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: AsyncByteStream,
+        extensions: typing.Dict,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
+    ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
+        if not self._complete:
+            self._context = await _async_wrap(self._build_context, connection, url[1])
+
+            status_code = 500
+            resp_headers = httpx.Headers()
+            resp_stream = ByteStream(b"")
+
+            send_headers, send_stream = self._wrap(headers, stream)
+            in_token = None
+
+            while not self._context.complete:
+                out_token = await _async_wrap(self._context.step, in_token)
+                if not out_token:
+                    break
+
+                self._add_header(send_headers, out_token, authz_header)
+                status_code, resp_headers, resp_stream, extensions = await connection.handle_async_request(
+                    method, url, send_headers.raw, send_stream, extensions
+                )
+                resp_headers, resp_stream = self._unwrap(resp_headers, await resp_stream.aread())
+
+                in_token = self._get_header_token(resp_headers, auths_header)
+                if not in_token:
+                    break
+
+            # If we didn't encrypt then the response from the auth phase
+            # contains our actual response. Also pass along any errors back.
+            if not self._encrypt or status_code != 200:
+                return status_code, resp_headers.raw, resp_stream, extensions
+
+        headers, stream = self._wrap(headers, await stream.aread())
+        status_code, headers, stream, extensions = await connection.handle_async_request(
+            method, url, headers.raw, stream, extensions
+        )
+        headers, stream = self._unwrap(headers, await stream.aread())
+
+        return status_code, headers.raw, stream, extensions
 
     def reset(self):
         self._context = None
@@ -217,8 +299,8 @@ class _NegotiateAuthBase:
     def _wrap(
         self,
         headers: Headers,
-        data: typing.Optional[bytearray] = None,
-    ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
+        data: typing.Optional[bytes] = None,
+    ) -> typing.Tuple[httpx.Headers, ByteStream]:
         temp_headers = httpx.Headers(headers)
 
         if self._encrypt and data:
@@ -228,23 +310,27 @@ class _NegotiateAuthBase:
             }.get(self.protocol, "SPNEGO")
 
             enc_data, content_type = encrypt_wsman(
-                data, temp_headers["Content-Type"], f"application/HTTP-{protocol}-session-encrypted", self._context
+                bytearray(data),
+                temp_headers["Content-Type"],
+                f"application/HTTP-{protocol}-session-encrypted",
+                self._context,
             )
             temp_headers["Content-Type"] = content_type
             temp_headers["Content-Length"] = str(len(enc_data))
 
-            stream = PlainByteStream(enc_data)
+            data = enc_data
 
         elif not data:
             temp_headers["Content-Length"] = "0"
+            data = b""
 
-        return temp_headers, stream
+        return temp_headers, ByteStream(data)
 
     def _unwrap(
         self,
         headers: Headers,
-        data: bytearray,
-    ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
+        data: bytes,
+    ) -> typing.Tuple[httpx.Headers, ByteStream]:
         temp_headers = httpx.Headers(headers)
 
         content_type = temp_headers.get("Content-Type", "")
@@ -254,176 +340,19 @@ class _NegotiateAuthBase:
         if self._encrypt and (
             content_type.startswith("multipart/encrypted;") or content_type.startswith("multipart/x-multi-encrypted;")
         ):
-            data, content_type = decrypt_wsman(data, content_type, self._context)
+            data, content_type = decrypt_wsman(bytes(data), content_type, self._context)
             temp_headers["Content-Length"] = str(len(data))
             temp_headers["Content-Type"] = content_type
 
-        return temp_headers, PlainByteStream(bytes(data))
+        return temp_headers, ByteStream(bytes(data))
 
 
-class AsyncNegotiateAuth(_NegotiateAuthBase, AsyncAuth):
-
-    SUPPORTS_ENCRYPTION = True
-
-    async def arequest(
-        self,
-        connection: AsyncHTTPTransport,
-        method: bytes,
-        url: URL,
-        headers: Headers = None,
-        stream: AsyncByteStream = None,
-        ext: typing.Dict = None,
-        auths_header: str = WWW_AUTHS,
-        authz_header: str = WWW_AUTHZ,
-    ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
-        if not self._complete:
-            self._context = await _async_wrap(self._build_context, connection, url[1])
-
-            status_code = 500
-            resp_headers = httpx.Headers()
-            resp_stream = PlainByteStream(b"")
-
-            send_headers, send_stream = await self._wrap_stream(headers, stream)
-            in_token = None
-
-            while not self._context.complete:
-                out_token = await _async_wrap(self._context.step, in_token)
-                if not out_token:
-                    break
-
-                self._add_header(send_headers, out_token, authz_header)
-                status_code, resp_headers, resp_stream, ext = await connection.arequest(
-                    method, url, headers=send_headers.raw, stream=send_stream, ext=ext
-                )
-                resp_headers, resp_stream = await self._unwrap_stream(resp_headers, resp_stream)
-
-                in_token = self._get_header_token(resp_headers, auths_header)
-                if not in_token:
-                    break
-
-            # If we didn't encrypt then the response from the auth phase
-            # contains our actual response. Also pass along any errors back.
-            if not self._encrypt or status_code != 200:
-                return status_code, resp_headers.raw, resp_stream, ext
-
-        headers, stream = await self._wrap_stream(headers, stream)
-        status_code, headers, stream, ext = await connection.arequest(
-            method, url, headers=headers.raw, stream=stream, ext=ext
-        )
-        headers, stream = await self._unwrap_stream(headers, stream)
-
-        return status_code, headers.raw, stream, ext
-
-    async def _wrap_stream(
-        self,
-        headers: Headers,
-        stream: typing.Optional[AsyncByteStream] = None,
-    ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
-        data = bytearray()
-        if self._encrypt and stream:
-            async for b in stream:
-                data += b
-
-        return self._wrap(headers, data)
-
-    async def _unwrap_stream(
-        self,
-        headers: Headers,
-        stream: AsyncByteStream,
-    ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
-        data = bytearray()
-        async for chunk in stream:
-            data += chunk
-        await stream.aclose()
-        # self._connection.expires_at = _time() + self._keepalive_expiry
-
-        return self._unwrap(headers, data)
-
-
-class SyncNegotiateAuth(_NegotiateAuthBase, SyncAuth):
-
-    SUPPORTS_ENCRYPTION = True
-
-    def request(
-        self,
-        connection: SyncHTTPTransport,
-        method: bytes,
-        url: URL,
-        headers: Headers = None,
-        stream: SyncByteStream = None,
-        ext: typing.Dict = None,
-        auths_header: str = WWW_AUTHS,
-        authz_header: str = WWW_AUTHZ,
-    ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
-        if not self._complete:
-            self._context = self._build_context(connection, url[1])
-
-            status_code = 500
-            resp_headers = httpx.Headers()
-            resp_stream = PlainByteStream(b"")
-
-            send_headers, send_stream = self._wrap_stream(headers, stream)
-            in_token = None
-
-            while not self._context.complete:
-                out_token = self._context.step(in_token)
-                if not out_token:
-                    break
-
-                self._add_header(send_headers, out_token, authz_header)
-                status_code, resp_headers, resp_stream, ext = connection.request(
-                    method, url, headers=send_headers.raw, stream=send_stream, ext=ext
-                )
-                headers, resp_stream = self._unwrap_stream(resp_headers, resp_stream)
-
-                # If we didn't encrypt then the response from the auth phase
-                # contains our actual response. Also pass along any errors back.
-                in_token = self._get_header_token(resp_headers, auths_header)
-                if not in_token:
-                    break
-
-            if not self._encrypt or status_code != 200:
-                return status_code, resp_headers.raw, resp_stream, ext
-
-        headers, stream = self._wrap_stream(headers, stream)
-        status_code, headers, stream, ext = connection.request(method, url, headers=headers.raw, stream=stream, ext=ext)
-        headers, stream = self._unwrap_stream(headers, stream)
-
-        return status_code, headers.raw, stream, ext
-
-    def _wrap_stream(
-        self,
-        headers: Headers,
-        stream: typing.Optional[SyncByteStream] = None,
-    ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
-        data = bytearray()
-        if self._encrypt and stream:
-            for b in stream:
-                data += b
-
-        return self._wrap(headers, data)
-
-    def _unwrap_stream(
-        self,
-        headers: Headers,
-        stream: SyncByteStream,
-    ) -> typing.Tuple[httpx.Headers, PlainByteStream]:
-        data = bytearray()
-        for chunk in stream:
-            data += chunk
-        stream.close()
-        # self._connection.expires_at = _time() + self._keepalive_expiry
-
-        return self._unwrap(headers, data)
-
-
-class _BasicAuthBase:
+class BasicAuth(_AuthBase):
     def __init__(
         self,
         username: str,
         password: str,
     ):
-        super().__init__(self)
         credential = f'{username or ""}:{password or ""}'.encode("utf-8")
         self._token = f"Basic {base64.b64encode(credential).decode()}"
 
@@ -437,42 +366,35 @@ class _BasicAuthBase:
 
         return headers.raw
 
-
-class AsyncBasicAuth(_BasicAuthBase, AsyncAuth):
-    async def arequest(
-        self,
-        connection: AsyncHTTPTransport,
-        method: bytes,
-        url: URL,
-        headers: Headers = None,
-        stream: AsyncByteStream = None,
-        ext: typing.Dict = None,
-        auths_header: str = WWW_AUTHS,
-        authz_header: str = WWW_AUTHZ,
-    ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
-        self._add_header(headers, authz_header)
-
-        return await connection.arequest(
-            method,
-            url,
-            headers=headers.raw,
-            stream=stream,
-            ext=ext,
-        )
-
-
-class SyncBasicAuth(_BasicAuthBase, SyncAuth):
-    def request(
+    def handle_request(
         self,
         connection: SyncHTTPTransport,
         method: bytes,
         url: URL,
-        headers: Headers = None,
-        stream: SyncByteStream = None,
-        ext: typing.Dict = None,
+        headers: Headers,
+        stream: SyncByteStream,
+        extensions: typing.Dict,
         auths_header: str = WWW_AUTHS,
         authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
-        self._add_header(headers, authz_header)
+        headers = self._add_header(headers, authz_header)
 
-        return connection.request(method, url, headers=headers.raw, stream=stream, ext=ext)
+        return connection.handle_request(method, url, headers, stream, extensions)
+
+    async def handle_async_request(
+        self,
+        connection: AsyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: AsyncByteStream,
+        extensions: typing.Dict,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
+    ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
+        headers = self._add_header(headers, authz_header)
+
+        return await connection.handle_async_request(method, url, headers, stream, extensions)
+
+
+AuthHandler = typing.TypeVar("AuthHandler", bound=_AuthBase)
