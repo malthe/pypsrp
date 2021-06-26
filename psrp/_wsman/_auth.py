@@ -12,6 +12,11 @@ import spnego
 import spnego.channel_bindings
 import typing
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.exceptions import UnsupportedAlgorithm
+
 from httpcore import (
     AsyncByteStream,
     AsyncHTTPTransport,
@@ -25,14 +30,11 @@ from ._encryption import (
     encrypt_wsman,
 )
 
-from ._utils import (
-    get_tls_server_end_point_hash,
-    Headers,
-    URL,
-)
 
 logger = logging.getLogger(__name__)
 
+URL = typing.Tuple[bytes, bytes, typing.Optional[int], bytes]
+Headers = typing.List[typing.Tuple[bytes, bytes]]
 
 WWW_AUTH_PATTERN = re.compile(r"(CredSSP|Kerberos|Negotiate|NTLM)\s*([^,]*),?", re.I)
 WWW_AUTHS = "WWW-Authenticate"
@@ -45,6 +47,41 @@ def _async_wrap(func, *args, **kwargs):
     task = loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
     return task
+
+
+def get_tls_server_end_point_hash(
+    certificate_der: bytes,
+) -> bytes:
+    """Get Channel Binding hash.
+
+    Get the channel binding tls-server-end-point hash value from the
+    certificate passed in.
+
+    Args:
+        certificate_der: The X509 DER encoded certificate.
+
+    Returns:
+        bytes: The hash value to use for the channel binding token.
+    """
+    backend = default_backend()
+
+    cert = x509.load_der_x509_certificate(certificate_der, backend)
+    try:
+        hash_algorithm = cert.signature_hash_algorithm
+    except UnsupportedAlgorithm:
+        hash_algorithm = None
+
+    # If the cert signature algorithm is unknown, md5, or sha1 then use sha256 otherwise use the signature
+    # algorithm of the cert itself.
+    if not hash_algorithm or hash_algorithm.name in ["md5", "sha1"]:
+        digest = hashes.Hash(hashes.SHA256(), backend)
+    else:
+        digest = hashes.Hash(hash_algorithm, backend)
+
+    digest.update(certificate_der)
+    certificate_hash = digest.finalize()
+
+    return certificate_hash
 
 
 class _AuthBase:
@@ -141,41 +178,70 @@ class NegotiateAuth(_AuthBase):
         auths_header: str = WWW_AUTHS,
         authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
+        headers = httpx.Headers(headers)
+
         if not self._complete:
-            self._context = self._build_context(connection, url[1])
+            resp = self._handle_auth(
+                connection, method, url, headers.copy(), stream, extensions, auths_header, authz_header
+            )
 
-            status_code = 500
-            resp_headers = httpx.Headers()
-            resp_stream = ByteStream(b"")
+            # If we didn't encrypt then the response from the auth phase contains our actual response. Also pass along
+            # any errors back. Otherwise we need to drain the socket and read the dummy data.
+            if not self._encrypt or resp[0] != 200:
+                return resp
+            else:
+                _ = resp[2].read()
 
-            send_headers, send_stream = self._wrap(headers, stream.read())
-            in_token = None
+        if self._encrypt:
+            headers, stream = self._wrap(headers, stream.read())
 
-            while not self._context.complete:
-                out_token = self._context.step(in_token)
-                if not out_token:
-                    break
+        status_code, headers, stream, extensions = connection.handle_request(
+            method, url, headers.raw, stream, extensions
+        )
+        headers = httpx.Headers(headers)
 
-                self._add_header(send_headers, out_token, authz_header)
-                status_code, resp_headers, resp_stream, extensions = connection.handle_request(
-                    method, url, send_headers.raw, send_stream, extensions
-                )
-                headers, resp_stream = self._unwrap(resp_headers, resp_stream.read())
-
-                # If we didn't encrypt then the response from the auth phase
-                # contains our actual response. Also pass along any errors back.
-                in_token = self._get_header_token(resp_headers, auths_header)
-                if not in_token:
-                    break
-
-            if not self._encrypt or status_code != 200:
-                return status_code, resp_headers.raw, resp_stream, extensions
-
-        headers, stream = self._wrap(headers, stream.read())
-        status_code, headers, stream, extensions = connection.request(method, url, headers.raw, stream, extensions)
-        headers, stream = self._unwrap(headers, stream.read())
+        if self._unwrap_required(headers):
+            headers, stream = self._unwrap(headers, stream.read())
 
         return status_code, headers.raw, stream, extensions
+
+    def _handle_auth(
+        self,
+        connection: SyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: httpx.Headers,
+        stream: SyncByteStream,
+        extensions: typing.Dict,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
+    ) -> typing.Tuple[int, Headers, SyncByteStream, typing.Dict]:
+        self._context = self._build_context(connection, url[1])
+
+        if self._encrypt:
+            headers["Content-Length"] = "0"
+            stream = ByteStream(b"")
+
+        status_code = resp_headers = resp_stream = in_token = None
+        while not self._context.complete:
+            out_token = self._context.step(in_token)
+            if not out_token:
+                break
+
+            if resp_stream:
+                _ = resp_stream.read()
+
+            self._add_header(headers, out_token, authz_header)
+            status_code, resp_headers, resp_stream, extensions = connection.handle_request(
+                method, url, headers.raw, stream, extensions
+            )
+            resp_headers = httpx.Headers(resp_headers)
+
+            in_token = self._get_header_token(resp_headers, auths_header)
+            if not in_token:
+                break
+
+        return status_code or 500, resp_headers or [], resp_stream or ByteStream(b""), extensions
 
     async def handle_async_request(
         self,
@@ -188,43 +254,70 @@ class NegotiateAuth(_AuthBase):
         auths_header: str = WWW_AUTHS,
         authz_header: str = WWW_AUTHZ,
     ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
+        headers = httpx.Headers(headers)
+
         if not self._complete:
-            self._context = await _async_wrap(self._build_context, connection, url[1])
+            resp = await self._handle_async_auth(
+                connection, method, url, headers.copy(), stream, extensions, auths_header, authz_header
+            )
 
-            status_code = 500
-            resp_headers = httpx.Headers()
-            resp_stream = ByteStream(b"")
+            # If we didn't encrypt then the response from the auth phase contains our actual response. Also pass along
+            # any errors back. Otherwise we need to drain the socket and read the dummy data.
+            if not self._encrypt or resp[0] != 200:
+                return resp
+            else:
+                _ = await resp[2].aread()
 
-            send_headers, send_stream = self._wrap(headers, stream)
-            in_token = None
+        if self._encrypt:
+            headers, stream = self._wrap(headers, await stream.aread())
 
-            while not self._context.complete:
-                out_token = await _async_wrap(self._context.step, in_token)
-                if not out_token:
-                    break
-
-                self._add_header(send_headers, out_token, authz_header)
-                status_code, resp_headers, resp_stream, extensions = await connection.handle_async_request(
-                    method, url, send_headers.raw, send_stream, extensions
-                )
-                resp_headers, resp_stream = self._unwrap(resp_headers, await resp_stream.aread())
-
-                in_token = self._get_header_token(resp_headers, auths_header)
-                if not in_token:
-                    break
-
-            # If we didn't encrypt then the response from the auth phase
-            # contains our actual response. Also pass along any errors back.
-            if not self._encrypt or status_code != 200:
-                return status_code, resp_headers.raw, resp_stream, extensions
-
-        headers, stream = self._wrap(headers, await stream.aread())
         status_code, headers, stream, extensions = await connection.handle_async_request(
             method, url, headers.raw, stream, extensions
         )
-        headers, stream = self._unwrap(headers, await stream.aread())
+        headers = httpx.Headers(headers)
+
+        if self._unwrap_required(headers):
+            headers, stream = self._unwrap(headers, await stream.aread())
 
         return status_code, headers.raw, stream, extensions
+
+    async def _handle_async_auth(
+        self,
+        connection: AsyncHTTPTransport,
+        method: bytes,
+        url: URL,
+        headers: httpx.Headers,
+        stream: AsyncByteStream,
+        extensions: typing.Dict,
+        auths_header: str = WWW_AUTHS,
+        authz_header: str = WWW_AUTHZ,
+    ) -> typing.Tuple[int, Headers, AsyncByteStream, typing.Dict]:
+        self._context = await _async_wrap(self._build_context, connection, url[1])
+
+        if self._encrypt:
+            headers["Content-Length"] = "0"
+            stream = ByteStream(b"")
+
+        status_code = resp_headers = resp_stream = in_token = None
+        while not self._context.complete:
+            out_token = await _async_wrap(self._context.step, in_token)
+            if not out_token:
+                break
+
+            if resp_stream:
+                _ = await resp_stream.aread()
+
+            self._add_header(headers, out_token, authz_header)
+            status_code, resp_headers, resp_stream, extensions = await connection.handle_async_request(
+                method, url, headers.raw, stream, extensions
+            )
+            resp_headers = httpx.Headers(resp_headers)
+
+            in_token = self._get_header_token(resp_headers, auths_header)
+            if not in_token:
+                break
+
+        return status_code or 500, resp_headers or [], resp_stream or ByteStream(b""), extensions
 
     def reset(self):
         self._context = None
@@ -238,7 +331,13 @@ class NegotiateAuth(_AuthBase):
         cbt = None
         ssl_object = None
         if hasattr(connection, "socket"):
-            ssl_object = connection.socket.stream_writer.get_extra_info("ssl_object")
+            if hasattr(connection.socket, "stream_writer"):
+                # asyncio
+                ssl_object = connection.socket.stream_writer.get_extra_info("ssl_object")
+
+            elif hasattr(connection.socket.sock, "getpeercert"):
+                # sync
+                ssl_object = connection.socket.sock
 
         if ssl_object and not self._disable_cbt and self.protocol != "credssp":
             cert = ssl_object.getpeercert(True)
@@ -298,53 +397,49 @@ class NegotiateAuth(_AuthBase):
 
     def _wrap(
         self,
-        headers: Headers,
-        data: typing.Optional[bytes] = None,
+        headers: httpx.Headers,
+        data: bytes,
     ) -> typing.Tuple[httpx.Headers, ByteStream]:
-        temp_headers = httpx.Headers(headers)
+        protocol = {
+            "kerberos": "Kerberos",
+            "credssp": "CredSSP",
+        }.get(self.protocol, "SPNEGO")
 
-        if self._encrypt and data:
-            protocol = {
-                "kerberos": "Kerberos",
-                "credssp": "CredSSP",
-            }.get(self.protocol, "SPNEGO")
+        data, content_type = encrypt_wsman(
+            bytearray(data),
+            headers["Content-Type"],
+            f"application/HTTP-{protocol}-session-encrypted",
+            self._context,
+        )
+        headers["Content-Type"] = content_type
+        headers["Content-Length"] = str(len(data))
 
-            enc_data, content_type = encrypt_wsman(
-                bytearray(data),
-                temp_headers["Content-Type"],
-                f"application/HTTP-{protocol}-session-encrypted",
-                self._context,
-            )
-            temp_headers["Content-Type"] = content_type
-            temp_headers["Content-Length"] = str(len(enc_data))
-
-            data = enc_data
-
-        elif not data:
-            temp_headers["Content-Length"] = "0"
-            data = b""
-
-        return temp_headers, ByteStream(data)
+        return headers, ByteStream(data)
 
     def _unwrap(
         self,
-        headers: Headers,
+        headers: httpx.Headers,
         data: bytes,
     ) -> typing.Tuple[httpx.Headers, ByteStream]:
-        temp_headers = httpx.Headers(headers)
+        content_type = headers["Content-Type"]
 
-        content_type = temp_headers.get("Content-Type", "")
+        data, content_type = decrypt_wsman(bytearray(data), content_type, self._context)
+        headers["Content-Length"] = str(len(data))
+        headers["Content-Type"] = content_type
 
-        # A proxy will have these content types but cannot do the encryption so
-        # we must also check for self._encrypt.
-        if self._encrypt and (
+        return headers, ByteStream(data)
+
+    def _unwrap_required(
+        self,
+        headers: httpx.Headers,
+    ) -> bool:
+        """Checks whether the response stream needs unwrapping."""
+        content_type = headers.get("Content-Type", "")
+
+        # A proxy will have these content types but cannot do the encryption so we must also check for self._encrypt.
+        return self._encrypt and (
             content_type.startswith("multipart/encrypted;") or content_type.startswith("multipart/x-multi-encrypted;")
-        ):
-            data, content_type = decrypt_wsman(bytes(data), content_type, self._context)
-            temp_headers["Content-Length"] = str(len(data))
-            temp_headers["Content-Type"] = content_type
-
-        return temp_headers, ByteStream(bytes(data))
+        )
 
 
 class BasicAuth(_AuthBase):

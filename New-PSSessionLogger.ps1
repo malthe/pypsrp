@@ -237,8 +237,8 @@ namespace CustomPSHost
 
         public override void WriteLine(string value)
         {
-            //throw new Exception("test");
-            PSHostUI.WriteLine(value);
+            throw new Exception("test");
+            //PSHostUI.WriteLine(value);
         }
 
         public override void WriteProgress(long sourceId, ProgressRecord record)
@@ -328,7 +328,7 @@ Function ConvertTo-PSSessionFragment {
     [OutputType('PSSession.Fragment')]
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [byte[]]
         $InputObject
     )
@@ -358,11 +358,11 @@ Function ConvertTo-PSSessionFragment {
 
         [PSCustomObject]@{
             PSTypeName = 'PSSession.Fragment'
-            ObjectID = $objectId
+            ObjectID   = $objectId
             FragmentID = $fragmentId
-            Start = $start
-            End = $end
-            Blob = $blob
+            Start      = $start
+            End        = $end
+            Blob       = $blob
         }
     }
 }
@@ -404,11 +404,11 @@ Function ConvertTo-PSSessionMessage {
     [OutputType('PSSession.Message')]
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [byte[]]
         $InputObject,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [UInt64]
         $ObjectID
     )
@@ -464,14 +464,14 @@ $message
     }
 
     [PSCustomObject]@{
-        PSTypeName = 'PSSession.Message'
-        ObjectID = $ObjectID
+        PSTypeName  = 'PSSession.Message'
+        ObjectID    = $ObjectID
         Destination = $destination
         MessageType = $messageType
-        RPID = $rpId
-        PID = $psId
-        Message = $psObject
-        Raw = $prettyXml
+        RPID        = $rpId
+        PID         = $psId
+        Message     = $psObject
+        Raw         = $prettyXml
     }
 }
 
@@ -509,7 +509,7 @@ Function ConvertTo-PSSessionPacket {
     [OutputType('PSSession.Packet')]
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [String[]]
         $InputObject
     )
@@ -545,12 +545,12 @@ Function ConvertTo-PSSessionPacket {
 
             [PSCustomObject]@{
                 PSTypeName = 'PSSession.Packet'
-                Type = $xmlData.Name
-                PSGuid = $xmlData.PSGuid
-                Stream = $xmlData.Stream
-                Fragments = $fragments
-                Messages = $messages
-                Raw = $packet
+                Type       = $xmlData.Name
+                PSGuid     = $xmlData.PSGuid
+                Stream     = $xmlData.Stream
+                Fragments  = $fragments
+                Messages   = $messages
+                Raw        = $packet
             }
         }
     }
@@ -583,7 +583,7 @@ Function Watch-PSSessionLog {
     [OutputType('PSSession.Packet')]
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [String]
         $Path,
 
@@ -597,7 +597,7 @@ Function Watch-PSSessionLog {
     process {
         $gcParams = @{
             LiteralPath = $Path
-            Wait = $Wait.IsPresent
+            Wait        = $Wait.IsPresent
         }
         if (-not $ScanHistory) {
             $gcParams.Tail = 0
@@ -620,7 +620,7 @@ Function Format-PSSessionPacket {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [PSTypeName('PSSession.Packet')]
         $InputObject
     )
@@ -632,7 +632,7 @@ Function Format-PSSessionPacket {
         $formatComplexValue = {
             [CmdletBinding()]
             param (
-                [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+                [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
                 $InputObject,
 
                 [int]
@@ -674,10 +674,10 @@ Function Format-PSSessionPacket {
                 }
 
                 $null = $sb.
-                    Append($padding).
-                    Append($prop.Name).
-                    Append(" " * ($propertyPadding - $prop.Name.Length)).
-                    Append(" : $formattedValue`n")
+                Append($padding).
+                Append($prop.Name).
+                Append(" " * ($propertyPadding - $prop.Name.Length)).
+                Append(" : $formattedValue`n")
             }
 
             $sb.ToString()
@@ -691,25 +691,25 @@ Function Format-PSSessionPacket {
                 N = 'Fragments'
                 E = {
                     @($_.Fragments | Select-Object -Property @(
-                        'ObjectID',
-                        'FragmentID',
-                        'Start',
-                        'End',
-                        @{ N = 'Length'; E = { $_.Blob.Length } }
-                    ))
+                            'ObjectID',
+                            'FragmentID',
+                            'Start',
+                            'End',
+                            @{ N = 'Length'; E = { $_.Blob.Length } }
+                        ))
                 }
             },
             @{
                 N = 'Messages'
                 E = {
                     @($_.Messages | Select-Object -Property @(
-                        'ObjectID',
-                        'Destination',
-                        'MessageType',
-                        @{ N = 'RPID'; E = { $_.RPID.ToString() } },
-                        @{ N = 'PID'; E = { $_.PID.ToString() } },
-                        @{ N = 'Object'; E = { "`n" + $_.Raw } }
-                    ))
+                            'ObjectID',
+                            'Destination',
+                            'MessageType',
+                            @{ N = 'RPID'; E = { $_.RPID.ToString() } },
+                            @{ N = 'PID'; E = { $_.PID.ToString() } },
+                            @{ N = 'Object'; E = { "`n" + $_.Raw } }
+                        ))
                 }
             }
         )
@@ -757,21 +757,21 @@ Function New-PSSessionLogger {
     This is a proof of concept and not really safe at all. Requires PowerShell 6+. Make sure you call .Dispose
     #>
     [OutputType([Management.Automation.Runspaces.PSSession])]
-    [CmdletBinding(DefaultParameterSetName='Process')]
+    [CmdletBinding(DefaultParameterSetName = 'Process')]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [String]
         $LogPath,
 
-        [Parameter(ParameterSetName='Process')]
+        [Parameter(ParameterSetName = 'Process')]
         [String]
         $FilePath = 'powershell',
 
-        [Parameter(ParameterSetName='Process')]
+        [Parameter(ParameterSetName = 'Process')]
         [String[]]
         $ArgumentList = @('-NoProfile', '-NoLogo'),
 
-        [Parameter(ParameterSetName='Pipe')]
+        [Parameter(ParameterSetName = 'Pipe')]
         [String]
         $Name
     )
@@ -798,10 +798,10 @@ Add-Content -LiteralPath '{0}' -Value $Data
                     $FilePath = 'pwsh'
                 }
                 $psi = [Diagnostics.ProcessStartInfo]@{
-                    FileName = 'nohup'
-                    Arguments = "$FilePath $($ArgumentList -join ' ')"
-                    RedirectStandardError = $true
-                    RedirectStandardInput = $true
+                    FileName               = 'nohup'
+                    Arguments              = "$FilePath $($ArgumentList -join ' ')"
+                    RedirectStandardError  = $true
+                    RedirectStandardInput  = $true
                     RedirectStandardOutput = $true
                 }
                 $netProcess = [Diagnostics.Process]::Start($psi)
@@ -813,10 +813,10 @@ Add-Content -LiteralPath '{0}' -Value $Data
             }
             else {
                 $processParams = @{
-                    FilePath = $FilePath
+                    FilePath     = $FilePath
                     ArgumentList = $ArgumentList
-                    PassThru = $true
-                    WindowStyle = 'Hidden'
+                    PassThru     = $true
+                    WindowStyle  = 'Hidden'
                 }
                 $process = Start-Process @processParams
             }
@@ -851,16 +851,16 @@ Add-Content -LiteralPath '{0}' -Value $Data
         # pipeline. This Runspace targets our intermediate pipe which then forwards to the target pipe.
         $ps = [PowerShell]::Create()
         $disposables.Add($ps)
-        $null = $ps.AddScript({
-            #$applicationArguments = @{
-            #    Test = ('a' * 128KB)
-            #}
-            $applicationArguments = $null
-            $connInfo = [Management.Automation.Runspaces.NamedPipeConnectionInfo]::new($args[0])
-            $rs = [RunspaceFactory]::CreateRunspace($connInfo, $args[1], $null, $applicationArguments)
-            $rs.Open()
-            $rs
-        }).AddArgument($pipeName).AddArgument($customHost)
+        $null = $ps.AddScript( {
+                #$applicationArguments = @{
+                #    Test = ('a' * 128KB)
+                #}
+                $applicationArguments = $null
+                $connInfo = [Management.Automation.Runspaces.NamedPipeConnectionInfo]::new($args[0])
+                $rs = [RunspaceFactory]::CreateRunspace($connInfo, $args[1], $null, $applicationArguments)
+                $rs.Open()
+                $rs
+            }).AddArgument($pipeName).AddArgument($customHost)
         $rsConnectWait = $ps.BeginInvoke()
 
         # Now the Runspace open is running in the background we can wait until it's connected.
@@ -878,9 +878,9 @@ Add-Content -LiteralPath '{0}' -Value $Data
 
         # Add a .Dispose() method that disposes of our resources.
         $disposeParams = @{
-            Name = 'Dispose'
+            Name       = 'Dispose'
             MemberType = 'ScriptMethod'
-            Value = {
+            Value      = {
                 $session | Remove-PSSession
                 Add-Content -Path $LogPath -Value ''
 

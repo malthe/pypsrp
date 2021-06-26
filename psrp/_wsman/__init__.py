@@ -10,12 +10,15 @@ separate all the logic into it's own package so I could eventually split it
 out into it's own library.
 
 The HTTP library used is based on `httpx`_ but uses it's own transport and
-connection implementation to support WSMan specific components. The goal is to
-remove the custom connection code and use what is provided in `httpcore`_.
+relies on currently private implementations in httpcore to support WSMan
+specific components. The goal is to remove the reliance on private details but
+for now we pin to the minor version.
+
 There are 2 things that need to happen before we can do that:
 
 * Make the HTTPConnection classes public `#272`_.
-* Expose a public way to connect the socket before sending a request `#273`_.
+* Expose the backends so we can manually connect to the socket before sending a request `#273`_.
+  * This also fixes the StartTLS issues when already in TLS (HTTPS proxy with HTTPS) `#254`_.
 
 .. _httpx:
     https://github.com/encode/httpx
@@ -23,9 +26,31 @@ There are 2 things that need to happen before we can do that:
 .. _httpcore:
     https://github.com/encode/httpcore
 
+.. _#254:
+    https://github.com/encode/httpcore/issues/254
+
 .. _#272:
     https://github.com/encode/httpcore/issues/272
 
 .. _#273:
     https://github.com/encode/httpcore/issues/273
 """
+
+from ._auth import (
+    AuthHandler,
+    BasicAuth,
+    NegotiateAuth,
+    NoAuth,
+)
+
+from ._transport import (
+    WSManTransport,
+)
+
+__all__ = [
+    "AuthHandler",
+    "BasicAuth",
+    "NegotiateAuth",
+    "NoAuth",
+    "WSManTransport",
+]

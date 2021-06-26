@@ -5,82 +5,25 @@
 import abc
 
 import httpx
-import re
-import struct
 import typing
 
 from urllib.parse import urlparse
 
-from .._wsman._transport import (
-    AsyncWSManTransport,
-)
-
-from .._wsman._auth import (
+from .._wsman import (
     BasicAuth,
     NegotiateAuth,
+    WSManTransport,
 )
 
 
-class WSManConnectionBase(metaclass=abc.ABCMeta):
+class _WSManConnectionBase(metaclass=abc.ABCMeta):
     """The WSManConnection contract.
 
     This is the WSManConnection contract that defines what is required for a WSMan IO class to be used by this library.
     """
 
-    async def __aenter__(self):
-        """Implements 'async with' for the WSMan connection."""
-        await self.open()
-        return self
+    _IS_ASYNC = False
 
-    def __enter__(self):
-        """Implements 'with' for the WSMan connection."""
-        self.open()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Implements the closing method for 'async with' for the WSMan connection."""
-        await self.close()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Implements the closing method for 'with' for the WSMan connection."""
-        self.close()
-
-    @abc.abstractmethod
-    def send(
-        self,
-        data: bytes,
-    ) -> bytes:
-        """Send WSMan data to the endpoint.
-
-        The WSMan envelope is sent as a HTTP POST request to the endpoint specified. This method should deal with the
-        encryption required for a request if it is necessary.
-
-        Args:
-            data: The WSMan envelope to send to the endpoint.
-
-        Returns:
-            bytes: The WSMan response.
-        """
-        pass
-
-    @abc.abstractmethod
-    def open(self):
-        """Opens the WSMan connection.
-
-        Opens the WSMan connection and sets up the connection for sending any WSMan envelopes.
-        """
-        pass
-
-    @abc.abstractmethod
-    def close(self):
-        """Closes the WSMan connection.
-
-        Closes the WSMan connection and any sockets/connections that are in use.
-        """
-        pass
-
-
-class AsyncWSManConnection(WSManConnectionBase):
     def __init__(
         self,
         connection_uri: str,
@@ -182,16 +125,73 @@ class AsyncWSManConnection(WSManConnectionBase):
         else:
             raise ValueError("Invalid proxy_auth specified")
 
-        transport = AsyncWSManTransport(
+        timeout = httpx.Timeout(max(connection_timeout, read_timeout), connect=connection_timeout, read=read_timeout)
+        transport = WSManTransport(
+            self._IS_ASYNC,
             auth=auth,
             ssl_context=ssl_context,
             keepalive_expiry=60.0,
             proxy_url=proxy,
             proxy_auth=proxy_auth,
         )
+        client_type = httpx.AsyncClient if self._IS_ASYNC else httpx.Client
+        self._http = client_type(headers=headers, timeout=timeout, transport=transport)
 
-        timeout = httpx.Timeout(max(connection_timeout, read_timeout), connect=connection_timeout, read=read_timeout)
-        self._http = httpx.AsyncClient(headers=headers, timeout=timeout, transport=transport)
+    async def __aenter__(self):
+        """Implements 'async with' for the WSMan connection."""
+        await self.open()
+        return self
+
+    def __enter__(self):
+        """Implements 'with' for the WSMan connection."""
+        self.open()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Implements the closing method for 'async with' for the WSMan connection."""
+        await self.close()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Implements the closing method for 'with' for the WSMan connection."""
+        self.close()
+
+    @abc.abstractmethod
+    def send(
+        self,
+        data: bytes,
+    ) -> bytes:
+        """Send WSMan data to the endpoint.
+
+        The WSMan envelope is sent as a HTTP POST request to the endpoint specified. This method should deal with the
+        encryption required for a request if it is necessary.
+
+        Args:
+            data: The WSMan envelope to send to the endpoint.
+
+        Returns:
+            bytes: The WSMan response.
+        """
+        pass
+
+    @abc.abstractmethod
+    def open(self):
+        """Opens the WSMan connection.
+
+        Opens the WSMan connection and sets up the connection for sending any WSMan envelopes.
+        """
+        pass
+
+    @abc.abstractmethod
+    def close(self):
+        """Closes the WSMan connection.
+
+        Closes the WSMan connection and any sockets/connections that are in use.
+        """
+        pass
+
+
+class AsyncWSManConnection(_WSManConnectionBase):
+    _IS_ASYNC = True
 
     async def send(
         self,
@@ -206,7 +206,6 @@ class AsyncWSManConnection(WSManConnectionBase):
         )
 
         content = await response.aread()
-        await response.aclose()
 
         # A WSManFault has more information that the WSMan state machine can
         # handle with better context so we ignore those.
@@ -222,94 +221,32 @@ class AsyncWSManConnection(WSManConnectionBase):
         await self._http.aclose()
 
 
-class WSManConnection(WSManConnectionBase):
+class WSManConnection(_WSManConnectionBase):
+    _IS_ASYNC = False
+
     def send(
         self,
         data: bytes,
-    ):
-        pass
+    ) -> bytes:
+        response = self._http.post(
+            self.connection_uri.geturl(),
+            content=data,
+            headers={
+                "Content-Type": "application/soap+xml;charset=UTF-8",
+            },
+        )
+
+        content = response.read()
+
+        # A WSManFault has more information that the WSMan state machine can
+        # handle with better context so we ignore those.
+        if response.status_code != 200 and (not content or b"wsmanfault" not in content):
+            response.raise_for_status()
+
+        return content
 
     def open(self):
         self._http.__enter__()
-        if self.encrypt:
-            self.send(b"")
 
     def close(self):
-        pass
-
-
-def _decrypt_wsman(
-    data: bytes,
-    content_type: str,
-    context,
-) -> bytes:
-    boundary = re.search("boundary=[" '|\\"](.*)[' '|\\"]', content_type).group(1)
-    # Talking to Exchange endpoints gives a non-compliant boundary that has a space between the --boundary.
-    # not ideal but we just need to handle it.
-    parts = re.compile((r"--\s*%s\r\n" % re.escape(boundary)).encode()).split(data)
-    parts = list(filter(None, parts))
-
-    content = []
-    for i in range(0, len(parts), 2):
-        header = parts[i].strip()
-        payload = parts[i + 1]
-
-        expected_length = int(header.split(b"Length=")[1])
-
-        # remove the end MIME block if it exists
-        payload = re.sub((r"--\s*%s--\r\n$" % boundary).encode(), b"", payload)
-
-        wrapped_data = payload.replace(b"\tContent-Type: application/octet-stream\r\n", b"")
-
-        header_length = struct.unpack("<i", wrapped_data[:4])[0]
-        b_header = wrapped_data[4 : 4 + header_length]
-        b_enc_data = wrapped_data[4 + header_length :]
-        unwrapped_data = context.unwrap_winrm(b_header, b_enc_data)
-        actual_length = len(unwrapped_data)
-
-        if actual_length != expected_length:
-            raise Exception(
-                "The encrypted length from the server does not match the expected length, "
-                "decryption failed, actual: %d != expected: %d" % (actual_length, expected_length)
-            )
-        content.append(unwrapped_data)
-
-    return b"".join(content)
-
-
-def _encrypt_wsman(
-    data: bytes,
-    content_type: str,
-    encryption_type: str,
-    context,
-) -> typing.Tuple[bytes, str]:
-    boundary = "Encrypted Boundary"
-
-    # If using CredSSP we must encrypt in 16KiB chunks.
-    max_size = 16384 if "CredSSP" in encryption_type else len(data)
-    chunks = [data[i : i + max_size] for i in range(0, len(data), max_size)]
-
-    encrypted_chunks = []
-    for chunk in chunks:
-        enc_details = context.wrap_winrm(chunk)
-        padding_length = enc_details.padding_length
-        wrapped_data = struct.pack("<i", len(enc_details.header)) + enc_details.header + enc_details.data
-        chunk_length = str(len(chunk) + padding_length)
-
-        content = "\r\n".join(
-            [
-                "--%s" % boundary,
-                "\tContent-Type: %s" % encryption_type,
-                "\tOriginalContent: type=%s;Length=%s" % (content_type, chunk_length),
-                "--%s" % boundary,
-                "\tContent-Type: application/octet-stream",
-                "",
-            ]
-        )
-        encrypted_chunks.append(content.encode() + wrapped_data)
-
-    content_sub_type = "multipart/encrypted" if len(encrypted_chunks) == 1 else "multipart/x-multi-encrypted"
-    content_type = '%s;protocol="%s";boundary="%s"' % (content_sub_type, encryption_type, boundary)
-    data = b"".join(encrypted_chunks) + ("--%s--\r\n" % boundary).encode()
-
-    return data, content_type
+        self._http.close()

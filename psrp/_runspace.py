@@ -336,7 +336,7 @@ class RunspacePool(_RunspacePoolBase):
 
             with self._wait_condition(PSRPMessageType.RunspacePoolState) as cond:
                 self.connection.close(self.pool)
-                cond.wait()
+                cond.wait_for(lambda: self.state != RunspacePoolState.Opened)
 
         self._event_task.join()
 
@@ -1064,9 +1064,8 @@ class AsyncPipeline(_PipelineBase):
             )
 
             if method_metadata.is_void:
-                # TODO: Check this behaviour in real life.
+                # PowerShell continues on even if the exception was on the client host
                 self.streams["error"].append(error_record)
-                await self.stop()
                 return
 
         if not method_metadata.is_void:
