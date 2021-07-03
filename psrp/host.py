@@ -5,8 +5,9 @@
 import collections
 import functools
 import typing
+import uuid
 
-from .dotnet.complex_types import (
+from psrpcore.types import (
     ConsoleColor,
     Coordinates,
     HostDefaultData,
@@ -15,30 +16,15 @@ from .dotnet.complex_types import (
     PSCredential,
     PSCredentialTypes,
     PSCredentialUIOptions,
-    PSDict,
-    PSGenericList,
     PSRPChoiceDescription,
     PSRPFieldDescription,
     Size,
-)
-
-from .dotnet.primitive_types import (
-    PSBool,
-    PSGuid,
-    PSInt,
-    PSInt64,
     PSSecureString,
-    PSString,
     PSVersion,
-)
-
-from .dotnet.ps_base import (
     PSObject,
-)
-
-from .dotnet.psrp_messages import (
     ProgressRecord,
 )
+
 
 MethodMetadata = collections.namedtuple("MethodMetadata", ["is_void", "invoke"])
 
@@ -47,7 +33,7 @@ class PSHost:
     def __init__(
         self,
         ui: typing.Optional["PSHostUI"] = None,
-    ):
+    ) -> None:
         self.ui = ui
 
     def get_host_info(self) -> HostInfo:
@@ -73,7 +59,7 @@ class PSHost:
             host_default_data=host_default_data,
         )
 
-    def get_name(self) -> PSString:
+    def get_name(self) -> str:
         """Name of the hosting application.
 
         This value reflects a user friendly identifier of the application hosting PowerShell. This value is only used
@@ -95,7 +81,7 @@ class PSHost:
         """
         raise NotImplementedError()
 
-    def get_instance_id(self) -> PSGuid:
+    def get_instance_id(self) -> uuid.UUID:
         """Unique ID for the host.
 
         This value reflects a unique identifier for the hosting application. This value is only used locally and is
@@ -106,7 +92,7 @@ class PSHost:
         """
         raise NotImplementedError()
 
-    def get_current_culture(self) -> PSString:
+    def get_current_culture(self) -> str:
         """Host Culture.
 
         This value reflects the hosts culture value as a string. The value SHOULD be in the format as described by
@@ -120,7 +106,7 @@ class PSHost:
         """
         raise NotImplementedError()
 
-    def get_current_ui_culture(self) -> PSString:
+    def get_current_ui_culture(self) -> str:
         """Host UI Culture.
 
         This value reflects the hosts UI culture value as a string. The value SHOULD be in the format as described by
@@ -136,8 +122,8 @@ class PSHost:
 
     def set_should_exit(
         self,
-        exit_code: PSInt,
-    ):
+        exit_code: int,
+    ) -> None:
         """Set should exit.
 
         This method is called when `$Host.SetShouldExit($int)` is called on the remote pipeline. When invoked locally
@@ -150,7 +136,7 @@ class PSHost:
         """
         raise NotImplementedError()
 
-    def enter_nested_prompt(self):
+    def enter_nested_prompt(self) -> None:
         """Enter a nested prompt.
 
         This SHOULD interrupt the current pipeline and start a nested pipeline when called. This method is only used
@@ -158,7 +144,7 @@ class PSHost:
         """
         raise NotImplementedError()
 
-    def exit_nested_prompt(self):
+    def exit_nested_prompt(self) -> None:
         """Exit a nested prompt.
 
         This SHOULD stop the nested pipeline and resume the current pipeline. This method is only used locally and is
@@ -166,22 +152,22 @@ class PSHost:
         """
         raise NotImplementedError()
 
-    def notify_begin_application(self):
+    def notify_begin_application(self) -> None:
         raise NotImplementedError()
 
-    def notify_end_application(self):
+    def notify_end_application(self) -> None:
         raise NotImplementedError()
 
     def push_runspace(
         self,
         runspace: PSObject,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
-    def pop_runspace(self):
+    def pop_runspace(self) -> None:
         raise NotImplementedError()
 
-    def get_is_runspace_pushed(self) -> PSBool:
+    def get_is_runspace_pushed(self) -> bool:
         raise NotImplementedError()
 
     def get_runspace(self) -> PSObject:
@@ -195,7 +181,7 @@ class PSHostUI:
     ):
         self.raw_ui = raw_ui
 
-    def read_line(self) -> PSString:
+    def read_line(self) -> str:
         raise NotImplementedError()
 
     def read_line_as_secure_string(self) -> PSSecureString:
@@ -203,89 +189,89 @@ class PSHostUI:
 
     def write1(
         self,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     def write2(
         self,
         foreground_color: ConsoleColor,
         background_color: ConsoleColor,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
-    def write_line1(self):
+    def write_line1(self) -> None:
         raise NotImplementedError()
 
     def write_line2(
         self,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     def write_line3(
         self,
         foreground_color: ConsoleColor,
         background_color: ConsoleColor,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     def write_error_line(
         self,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     def write_debug_line(
         self,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     def write_progress(
         self,
-        source_id: PSInt64,
+        source_id: int,
         record: ProgressRecord,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
     def write_verbose_line(
         self,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     def write_warning_line(
         self,
-        message: PSString,
-    ):
+        message: str,
+    ) -> None:
         raise NotImplementedError()
 
     def prompt(
         self,
-        caption: PSString,
-        message: PSString,
-        descriptions: PSGenericList[PSRPFieldDescription],
-    ) -> PSDict:
+        caption: str,
+        message: str,
+        descriptions: typing.List[PSRPFieldDescription],
+    ) -> typing.Dict[str, PSObject]:
         raise NotImplementedError()
 
     def prompt_for_credential(
         self,
-        caption: PSString,
-        message: PSString,
-        user_name: PSString,
-        target_name: PSString,
+        caption: str,
+        message: str,
+        user_name: str,
+        target_name: str,
     ) -> PSCredential:
         raise NotImplementedError()
 
     def prompt_for_credential2(
         self,
-        caption: PSString,
-        message: PSString,
-        user_name: PSString,
-        target_name: PSString,
+        caption: str,
+        message: str,
+        user_name: str,
+        target_name: str,
         allowed_credential_types: PSCredentialTypes,
         options: PSCredentialUIOptions,
     ) -> PSCredential:
@@ -293,20 +279,20 @@ class PSHostUI:
 
     def prompt_for_choice(
         self,
-        caption: PSString,
-        message: PSString,
-        choices: PSGenericList[PSRPChoiceDescription],
-        default_choice: PSInt,
-    ) -> PSInt:
+        caption: str,
+        message: str,
+        choices: typing.List[PSRPChoiceDescription],
+        default_choice: int,
+    ) -> int:
         raise NotImplementedError()
 
     def prompt_for_choice_multiple_selection(
         self,
-        caption: PSString,
-        message: PSString,
-        choices: PSGenericList[PSRPChoiceDescription],
-        choice_choices: PSGenericList[PSInt],
-    ) -> PSGenericList[PSInt]:
+        caption: str,
+        message: str,
+        choices: typing.List[PSRPChoiceDescription],
+        choice_choices: typing.List[int],
+    ) -> typing.List[int]:
         raise NotImplementedError()
 
 
@@ -339,7 +325,7 @@ class PSHostRawUI:
     def set_foreground_color(
         self,
         value: ConsoleColor,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
     def get_background_color(self) -> ConsoleColor:
@@ -348,7 +334,7 @@ class PSHostRawUI:
     def set_background_color(
         self,
         value: ConsoleColor,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
     def get_cursor_position(self) -> Coordinates:
@@ -357,7 +343,7 @@ class PSHostRawUI:
     def set_cursor_position(
         self,
         value: Coordinates,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
     def get_window_position(self) -> Coordinates:
@@ -366,16 +352,16 @@ class PSHostRawUI:
     def set_window_position(
         self,
         value: Coordinates,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
-    def get_cursor_size(self) -> PSInt:
+    def get_cursor_size(self) -> int:
         raise NotImplementedError()
 
     def set_cursor_size(
         self,
-        value: PSInt,
-    ):
+        value: int,
+    ) -> None:
         raise NotImplementedError()
 
     def get_buffer_size(self) -> Size:
@@ -384,7 +370,7 @@ class PSHostRawUI:
     def set_buffer_size(
         self,
         value: Size,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
     def get_window_size(self) -> Size:
@@ -393,16 +379,16 @@ class PSHostRawUI:
     def set_window_size(
         self,
         value: Size,
-    ):
+    ) -> None:
         raise NotImplementedError()
 
-    def get_window_title(self) -> PSString:
+    def get_window_title(self) -> str:
         raise NotImplementedError()
 
     def set_window_title(
         self,
-        value: PSString,
-    ):
+        value: str,
+    ) -> None:
         raise NotImplementedError()
 
     def get_max_window_size(self) -> Size:
@@ -411,25 +397,25 @@ class PSHostRawUI:
     def get_max_physical_window_size(self) -> Size:
         raise NotImplementedError()
 
-    def get_key_available(self) -> PSBool:
+    def get_key_available(self) -> bool:
         raise NotImplementedError()
 
-    def read_key(self):
+    def read_key(self) -> None:
         raise NotImplementedError()
 
-    def flush_input_buffer(self):
+    def flush_input_buffer(self) -> None:
         raise NotImplementedError()
 
-    def set_buffer_contents1(self):
+    def set_buffer_contents1(self) -> None:
         raise NotImplementedError()
 
-    def set_buffer_contents2(self):
+    def set_buffer_contents2(self) -> None:
         raise NotImplementedError()
 
-    def get_buffer_contents(self):
+    def get_buffer_contents(self) -> None:
         raise NotImplementedError()
 
-    def scroll_buffer_contents(self):
+    def scroll_buffer_contents(self) -> None:
         raise NotImplementedError()
 
 

@@ -5,6 +5,7 @@
 import abc
 
 import httpx
+import logging
 import typing
 
 from urllib.parse import urlparse
@@ -14,6 +15,8 @@ from .._wsman import (
     NegotiateAuth,
     WSManTransport,
 )
+
+log = logging.getLogger(__name__)
 
 
 class _WSManConnectionBase(metaclass=abc.ABCMeta):
@@ -228,6 +231,7 @@ class WSManConnection(_WSManConnectionBase):
         self,
         data: bytes,
     ) -> bytes:
+        log.debug("WSMan Request", data.decode())
         response = self._http.post(
             self.connection_uri.geturl(),
             content=data,
@@ -237,6 +241,8 @@ class WSManConnection(_WSManConnectionBase):
         )
 
         content = response.read()
+        if content:
+            log.debug("WSMan Response", content.decode())
 
         # A WSManFault has more information that the WSMan state machine can
         # handle with better context so we ignore those.

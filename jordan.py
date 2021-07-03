@@ -14,14 +14,15 @@ from psrp import (
     WSManInfo,
 )
 
-from psrp.dotnet.complex_types import (
-    ConsoleColor,
-    Coordinates,
-    Size,
+from psrpcore import (
+    Command,
 )
 
-from psrp.dotnet.primitive_types import (
-    PSSecureString,
+from psrpcore.types import (
+    ConsoleColor,
+    Coordinates,
+    PipelineResultTypes,
+    Size,
 )
 
 from psrp.host import (
@@ -29,12 +30,6 @@ from psrp.host import (
     PSHostUI,
     PSHostRawUI,
 )
-
-from psrp.protocol.powershell import (
-    Command,
-    PipelineResultTypes,
-)
-
 
 endpoint = "server2019.domain.test"
 
@@ -379,7 +374,201 @@ async def async_main():
     )
 
 
+import io
+import logging
+import os
+import xml.dom.minidom
+from ruamel import yaml
+
+from psrpcore._payload import unpack_fragment, unpack_message
+
+
+class MyFileLogger(logging.FileHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._buffer = {}
+
+    def emit(self, record):
+        if record.msg.startswith("WSMan"):
+            pretty_xml = self._pretty_xml(record.args[0])
+            msg = "### %s\n```xml\n%s\n```\n" % (record.msg, pretty_xml)
+
+        elif record.msg.startswith("PSRP"):
+            pretty_psrp = self._pretty_psrp(record.args[0])
+            msg = "### %s\n```yaml\n%s\n```\n" % (record.msg, pretty_psrp)
+
+        else:
+            msg = record.msg % record.args
+
+        record.args = ()
+        record.msg = msg
+        super().emit(record)
+
+    def _pretty_xml(self, xml_data):
+        dom = xml.dom.minidom.parseString(xml_data)
+        pretty_xml = dom.documentElement.toprettyxml()
+        # remove the weird newline issue:
+        pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines() if s.strip()])
+        return pretty_xml
+
+    def _pretty_psrp(self, data):
+        msgs = []
+
+        while data:
+            fragment = unpack_fragment(data)
+            data = data[21 + len(fragment.data) :]
+            buffer = self._buffer.setdefault(fragment.object_id, [])
+            buffer.append(fragment)
+
+            msg = None
+            if fragment.end:
+                del self._buffer[fragment.object_id]
+                msg_data = b"".join([f.data for f in buffer])
+                raw_msg = unpack_message(msg_data)
+                message_type = raw_msg.message_type.value
+                msg = {
+                    "MessageType": f"{raw_msg.message_type.name} - {message_type} 0x{message_type:08X}",
+                    "RPID": str(raw_msg.rpid) if raw_msg.rpid else None,
+                    "PID": str(raw_msg.pid) if raw_msg.pid else None,
+                    "Data": yaml.scalarstring.PreservedScalarString(self._pretty_xml(raw_msg.data.decode())),
+                }
+
+            msgs.append(
+                {
+                    "ObjectID": fragment.object_id,
+                    "FragmentId": fragment.fragment_id,
+                    "Start": fragment.start,
+                    "End": fragment.end,
+                    "Msg": msg,
+                }
+            )
+
+        return self._to_yaml(msgs)
+
+    def _to_yaml(self, data):
+        y = yaml.YAML()
+        y.default_flow_style = False
+        stream = io.StringIO()
+
+        y.dump(data, stream)
+
+        return stream.getvalue()
+
+
+"""
+# Open Runspace Pool
+
+PSRP
+    Client -> Server
+        SessionCapability, InitRunspacePool,
+
+    Server -> Client
+        SessionCapability, ApplicationPrivateData, RunspacePoolState
+
+WSMan
+    WSMan Create - Include as many fragments
+    WSMan Response - No data
+
+    WSMan Receive - Start receiving data on loop until close
+    WSMan ReceiveResponse - PSRP fragments from server
+
+    WSMan Send - Remaining fragments taht didn't fit into the Create message
+    WSMan SendResponse - For every send, no data
+
+OutOfProc
+
+
+# Close Runspace Pool
+
+Must stop all pipelines first
+
+PSRP
+    Client -> Server
+        Nothing
+
+    Server -> Client
+        Nothing
+
+WSMan
+    WSMan Delete - No data
+    WSMan DeleteResponse - No data
+
+OutOfProc
+
+
+# Disconnect Runspace Pool
+
+PSRP
+    Client -> Server
+        Nothing
+
+    Server -> Client
+        Nothing
+
+WSMan
+    WSMan Disconnect - No data
+    WSMan DisconnectResponse - No data
+
+
+
+# Reconnect Runspace Pool
+
+PSRP
+    Client -> Server
+        Nothing
+
+    Server -> Client
+        Nothing
+
+WSMan
+    WSMan Reconnect - No data
+    WSMan ReconnectResponse - No data
+
+
+# Connect Runspace Pool
+
+PSRP
+    Client -> Server
+        SessionCapability,ConnectRunspacePool
+
+    Server -> Client
+
+WSMan:
+    WSManConnect - Include as many fragments
+    WSManConnectResponse - Contains some fragments
+
+    WSManReceive - No data
+    WSManReceiveResponse - No data
+
+"""
+
+
 def sync_main():
+
+    log_path = "/home/jborean/dev/pypsrp/wsman.md"
+    if os.path.exists(log_path):
+        os.remove(log_path)
+
+    handler = MyFileLogger(log_path)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    for l in ["psrp.io.wsman", "psrp.connection_info"]:
+        log = logging.getLogger(l)
+        log.setLevel(logging.DEBUG)
+        log.addHandler(handler)
+
+    info = WSManInfo("http://server2019.domain.test:5985/wsman")
+    with RunspacePool(info) as pool:
+        # ps = PowerShell(pool)
+        # ps.add_script("echo 'hi'")
+        # ps.invoke()
+        pool.disconnect()
+
+    for p in RunspacePool.get_runspace_pool(info):
+        with p:
+            a = ""
+
+
+def sync_main2():
     wsman_build_dir = "/home/jborean/dev/wsman-environment/build"
     cert_ca_path = os.path.join(wsman_build_dir, "ca.pem")
     cert_auth_pem = os.path.join(wsman_build_dir, "client_auth.pem")

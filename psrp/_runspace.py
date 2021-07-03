@@ -8,6 +8,33 @@ import queue
 import threading
 import typing
 
+from psrpcore import (
+    ClientGetCommandMetadata,
+    ClientPowerShell,
+    ClientRunspacePool,
+    Command,
+    MissingCipherError,
+    Pipeline,
+    PipelineHostCallEvent,
+    PSRPEvent,
+    RunspaceAvailabilityEvent,
+    RunspacePoolHostCallEvent,
+)
+
+from psrpcore.types import (
+    ApartmentState,
+    CommandTypes,
+    ErrorCategoryInfo,
+    ErrorRecord,
+    NETException,
+    PSInvocationState,
+    PSRPMessageType,
+    PSObject,
+    PSThreadOptions,
+    RemoteStreamOptions,
+    RunspacePoolState,
+)
+
 from ._compat import (
     asynccontextmanager,
     asyncio_create_task,
@@ -19,47 +46,8 @@ from .host import (
     PSHost,
 )
 
-from .protocol.powershell import (
-    ClientGetCommandMetadata,
-    ClientPowerShell,
-    Command,
-    PipelineType,
-    PSInvocationState,
-    RunspacePool as PSRunspacePool,
-)
-
-from .protocol.powershell_events import (
-    PSRPEvent,
-    PipelineHostCallEvent,
-    RunspaceAvailabilityEvent,
-    RunspacePoolHostCallEvent,
-)
-
-from .dotnet.complex_types import (
-    ApartmentState,
-    CommandTypes,
-    ErrorCategoryInfo,
-    ErrorRecord,
-    NETException,
-    PSThreadOptions,
-    RemoteStreamOptions,
-    RunspacePoolState,
-)
-
-from .dotnet.ps_base import (
-    PSObject,
-)
-
-from .dotnet.psrp_messages import (
-    PSRPMessageType,
-)
-
 from .connection_info import (
     ConnectionInfo,
-)
-
-from .exceptions import (
-    MissingCipherError,
 )
 
 
@@ -211,7 +199,7 @@ class _RunspacePoolBase:
         runspace_pool_id: typing.Optional[str] = None,
     ):
         # We don't pass in host here as getting the host info might be a coroutine. It is set in open().
-        self.pool = PSRunspacePool(
+        self.pool = ClientRunspacePool(
             apartment_state=apartment_state,
             thread_options=thread_options,
             min_runspaces=min_runspaces,
@@ -268,7 +256,7 @@ class _RunspacePoolBase:
         else:
             reg_table = self._registrations
 
-        return reg_table[event.MESSAGE_TYPE]
+        return reg_table[event.message_type]
 
 
 class RunspacePool(_RunspacePoolBase):
@@ -286,6 +274,7 @@ class RunspacePool(_RunspacePoolBase):
 
     def connect(self):
         if self._new_client:
+            self.pool.state = RunspacePoolState.BeforeOpen  # FIXME
             if self.host:
                 self.pool.host = self.host.get_host_info()
 
@@ -631,7 +620,7 @@ class _PipelineBase:
     def __init__(
         self,
         runspace_pool: _RunspacePoolBase,
-        pipeline: PipelineType,
+        pipeline: Pipeline,
     ):
         self.runspace_pool = runspace_pool
         self.pipeline = pipeline

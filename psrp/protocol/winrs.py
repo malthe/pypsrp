@@ -101,7 +101,6 @@ class WinRS:
     ) -> WSManEvent:
         event = self.wsman.receive_data(data)
 
-        print("Received %s" % event)
         if isinstance(event, CreateResponseEvent):
             self._parse_shell_create(event.body)
 

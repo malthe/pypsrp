@@ -18,6 +18,7 @@ pyspnego = "< 1.0.0"
 httpx = "^0.18.2"
 httpcore = "^0.13.6"
 async_generator = {version = "^1.10", python = "< 3.7"}
+psrpcore = {git = "https://github.com/jborean93/psrpcore.git", rev = "main"}
 
 # kerberos
 gssapi = {version = "^1.5.0", optional = true, markers = "sys_platform!='win32'"}

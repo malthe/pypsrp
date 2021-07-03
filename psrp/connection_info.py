@@ -5,16 +5,25 @@
 import asyncio
 import base64
 import enum
+import logging
 import queue
 import threading
 import typing
+import uuid
 import xml.etree.ElementTree as ElementTree
 
 from ._compat import (
     asyncio_create_task,
 )
 
-from .dotnet.complex_types import (
+from psrpcore import (
+    PSRPEvent,
+    PSRPPayload,
+    RunspacePool,
+    StreamType,
+)
+
+from psrpcore.types import (
     RunspacePoolState,
 )
 
@@ -39,16 +48,6 @@ from .io.wsman import (
     WSManConnection,
 )
 
-from .protocol.powershell import (
-    PSRPPayload,
-    RunspacePool,
-    StreamType,
-)
-
-from .protocol.powershell_events import (
-    PSRPEvent,
-)
-
 from .protocol.winrs import (
     WinRS,
 )
@@ -61,6 +60,8 @@ from .protocol.wsman import (
     SignalCode,
     WSMan,
 )
+
+log = logging.getLogger(__name__)
 
 
 class OutputBufferingMode(enum.Enum):
@@ -115,7 +116,7 @@ class _ConnectionInfoBase:
             Optional[PSRPPayload]: The transport payload to send if there is
                 one.
         """
-        pool_buffer = self._buffer.setdefault(pool.runspace_id, bytearray())
+        pool_buffer = self._buffer.setdefault(pool.runspace_pool_id, bytearray())
         fragment_size = self.get_fragment_size(pool)
         psrp_payload = pool.data_to_send(fragment_size - len(pool_buffer))
         if not psrp_payload:
@@ -125,8 +126,9 @@ class _ConnectionInfoBase:
         if buffer and len(pool_buffer) < fragment_size:
             return
 
+        log.debug("PSRP Send", pool_buffer)
         # No longer need the buffer for now
-        del self._buffer[pool.runspace_id]
+        del self._buffer[pool.runspace_pool_id]
         return PSRPPayload(
             pool_buffer,
             psrp_payload.stream_type,
@@ -315,12 +317,12 @@ class ConnectionInfo(_ConnectionInfoBase):
     ):
         super().__init__()
 
-        self._data_queue: typing.Dict[str, queue.Queue] = {}
+        self._data_queue: typing.Dict[uuid.UUID, queue.Queue] = {}
         self._queue_lock = threading.Lock()
 
     def queue_response(
         self,
-        runspace_pool_id: str,
+        runspace_pool_id: uuid.UUID,
         data: typing.Optional[bytes] = None,
     ):
         """Queue received data.
@@ -359,18 +361,18 @@ class ConnectionInfo(_ConnectionInfoBase):
             if event:
                 return event
 
-            data_queue = self._get_pool_queue(pool.runspace_id)
+            data_queue = self._get_pool_queue(pool.runspace_pool_id)
             msg = data_queue.get()
             if msg is None:
                 return
+
+            log.debug("PSRP Receive", msg.data)
             pool.receive_data(msg)
 
     def _get_pool_queue(
         self,
-        runspace_pool_id: str,
+        runspace_pool_id: uuid.UUID,
     ):
-        runspace_pool_id = runspace_pool_id.lower()
-
         with self._queue_lock:
             self._data_queue.setdefault(runspace_pool_id, queue.Queue())
 
@@ -387,7 +389,7 @@ class AsyncConnectionInfo(_ConnectionInfoBase):
 
     async def queue_response(
         self,
-        runspace_pool_id: str,
+        runspace_pool_id: uuid.UUID,
         data: typing.Optional[PSRPPayload] = None,
     ):
         data_queue = await self._get_pool_queue(runspace_pool_id)
@@ -402,7 +404,7 @@ class AsyncConnectionInfo(_ConnectionInfoBase):
             if event:
                 return event
 
-            data_queue = await self._get_pool_queue(pool.runspace_id)
+            data_queue = await self._get_pool_queue(pool.runspace_pool_id)
             msg = await data_queue.get()
             if msg is None:
                 return
@@ -410,10 +412,8 @@ class AsyncConnectionInfo(_ConnectionInfoBase):
 
     async def _get_pool_queue(
         self,
-        runspace_pool_id: str,
+        runspace_pool_id: uuid.UUID,
     ):
-        runspace_pool_id = runspace_pool_id.lower()
-
         async with self._queue_lock:
             self._data_queue.setdefault(runspace_pool_id, asyncio.Queue())
 
@@ -629,14 +629,14 @@ class OutOfProcInfo(ConnectionInfo):
 
             tag = packet.tag
             if tag == "Data":
-                self.queue_response(self._runspace_pool.runspace_id, data)
+                self.queue_response(self._runspace_pool.runspace_pool_id, data)
 
             else:
                 with self._wait_condition:
                     self._wait_table.remove(f'{tag}:{ps_guid or ""}')
                     self._wait_condition.notify_all()
 
-        self.queue_response(self._runspace_pool.runspace_id, None)
+        self.queue_response(self._runspace_pool.runspace_pool_id, None)
 
 
 class AsyncOutOfProcInfo(AsyncConnectionInfo):
@@ -784,14 +784,14 @@ class AsyncOutOfProcInfo(AsyncConnectionInfo):
 
             tag = packet.tag
             if tag == "Data":
-                await self.queue_response(self._runspace_pool.runspace_id, data)
+                await self.queue_response(self._runspace_pool.runspace_pool_id, data)
 
             else:
                 async with self._wait_condition:
                     self._wait_table.remove(f'{tag}:{ps_guid or ""}')
                     self._wait_condition.notify_all()
 
-        await self.queue_response(self._runspace_pool.runspace_id, None)
+        await self.queue_response(self._runspace_pool.runspace_pool_id, None)
 
 
 class ProcessInfo(OutOfProcInfo):
@@ -948,13 +948,13 @@ class WSManInfo(ConnectionInfo):
 
     def close(self, pool: RunspacePool, pipeline_id: typing.Optional[str] = None):
         if pipeline_id is not None:
-            self.signal(pool, pipeline_id, signal_code=SignalCode.terminate)
+            self.signal(pool, str(pipeline_id).upper(), signal_code=SignalCode.terminate)
 
-            pipeline_task = self._listener_tasks.pop(f"{pool.runspace_id}:{pipeline_id}")
+            pipeline_task = self._listener_tasks.pop(f"{pool.runspace_pool_id}:{pipeline_id}")
             pipeline_task.join()
 
         else:
-            winrs = self._runspace_table[pool.runspace_id]
+            winrs = self._runspace_table[pool.runspace_pool_id]
             winrs.close()
             resp = self._connection.send(winrs.data_to_send())
             winrs.receive_data(resp)
@@ -964,10 +964,10 @@ class WSManInfo(ConnectionInfo):
 
             # Wait for the listener task(s) to complete and remove the RunspacePool from our internal table.
             for task_id in list(self._listener_tasks.keys()):
-                if task_id.startswith(f"{pool.runspace_id}:"):
+                if task_id.startswith(f"{pool.runspace_pool_id}:"):
                     self._listener_tasks.pop(task_id).join()
 
-            del self._runspace_table[pool.runspace_id]
+            del self._runspace_table[pool.runspace_pool_id]
 
             # No more connections left, close the underlying connection.
             if not self._runspace_table:
@@ -978,10 +978,10 @@ class WSManInfo(ConnectionInfo):
         pool: RunspacePool,
         pipeline_id: str,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         payload = self.next_payload(pool)
-        winrs.command("", args=[base64.b64encode(payload.data).decode()], command_id=pipeline_id)
+        winrs.command("", args=[base64.b64encode(payload.data).decode()], command_id=str(pipeline_id))
         resp = self._connection.send(winrs.data_to_send())
         winrs.receive_data(resp)
 
@@ -994,11 +994,11 @@ class WSManInfo(ConnectionInfo):
         winrs = WinRS(
             WSMan(self._connection_uri),
             self._configuration_name,
-            shell_id=pool.runspace_id,
+            shell_id=str(pool.runspace_pool_id),
             input_streams="stdin pr",
             output_streams="stdout",
         )
-        self._runspace_table[pool.runspace_id] = winrs
+        self._runspace_table[pool.runspace_pool_id] = winrs
 
         payload = self.next_payload(pool)
 
@@ -1022,10 +1022,10 @@ class WSManInfo(ConnectionInfo):
         if not payload:
             return False
 
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         stream = "stdin" if payload.stream_type == StreamType.default else "pr"
-        winrs.send(stream, payload.data, command_id=payload.pipeline_id)
+        winrs.send(stream, payload.data, command_id=str(payload.pipeline_id))
         resp = self._connection.send(winrs.data_to_send())
         winrs.receive_data(resp)
 
@@ -1037,11 +1037,95 @@ class WSManInfo(ConnectionInfo):
         pipeline_id: typing.Optional[str] = None,
         signal_code: SignalCode = SignalCode.ps_ctrl_c,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
-        winrs.signal(signal_code, pipeline_id)
+        winrs.signal(signal_code, str(pipeline_id).upper())
         resp = self._connection.send(winrs.data_to_send())
         winrs.receive_data(resp)
+
+    def disconnect(
+        self,
+        pool: RunspacePool,
+        buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
+        idle_timeout: typing.Optional[typing.Union[int, float]] = None,
+    ):
+        winrs = self._runspace_table[pool.runspace_pool_id]
+        rsp = NAMESPACES["rsp"]
+
+        disconnect = ElementTree.Element("{%s}Disconnect" % rsp)
+        if buffer_mode != OutputBufferingMode.none:
+            buffer_mode_str = "Block" if buffer_mode == OutputBufferingMode.block else "Drop"
+            ElementTree.SubElement(disconnect, "{%s}BufferMode" % rsp).text = buffer_mode_str
+
+        if idle_timeout:
+            idle_str = f"PT{idle_timeout}S"
+            ElementTree.SubElement(disconnect, "{%s}IdleTimeout" % rsp).text = idle_str
+
+        winrs.wsman.disconnect(winrs.resource_uri, disconnect, selector_set=winrs.selector_set)
+        resp = self._connection.send(winrs.data_to_send())
+        winrs.receive_data(resp)
+
+    def reconnect(
+        self,
+        pool: RunspacePool,
+    ):
+        winrs = self._runspace_table[pool.runspace_pool_id]
+
+        winrs.wsman.reconnect(winrs.resource_uri, selector_set=winrs.selector_set)
+        resp = self._connection.send(winrs.data_to_send())
+        winrs.receive_data(resp)
+
+        self._create_listener(pool)
+
+    def enumerate(self) -> typing.AsyncIterable[typing.Tuple[str, typing.List[str]]]:
+        winrs = WinRS(WSMan(self._connection_uri))
+        winrs.enumerate()
+        resp = self._connection.send(winrs.data_to_send())
+        shell_enumeration = winrs.receive_data(resp)
+
+        for shell in shell_enumeration.shells:
+            shell.enumerate("http://schemas.microsoft.com/wbem/wsman/1/windows/shell/Command", shell.selector_set)
+            resp = self._connection.send(winrs.data_to_send())
+            cmd_enumeration = winrs.receive_data(resp)
+
+            self._runspace_table[uuid.UUID(shell.shell_id)] = shell
+
+            yield uuid.UUID(shell.shell_id), cmd_enumeration.commands
+
+    def connect(
+        self,
+        pool: RunspacePool,
+        pipeline_id: typing.Optional[uuid.UUID] = None,
+    ):
+        rsp = NAMESPACES["rsp"]
+        connect = ElementTree.Element("{%s}Connect" % rsp)
+        if pipeline_id:
+            connect.attrib["CommandId"] = str(pipeline_id)
+            options = None
+
+        else:
+            payload = self.next_payload(pool)
+
+            options = OptionSet()
+            options.add_option("protocolversion", pool.our_capability.protocolversion, {"MustComply": "true"})
+
+            open_content = ElementTree.SubElement(
+                connect, "connectXml", xmlns="http://schemas.microsoft.com/powershell"
+            )
+            open_content.text = base64.b64encode(payload.data).decode()
+
+        winrs = self._runspace_table[pool.runspace_pool_id]
+        winrs.wsman.connect(winrs.resource_uri, connect, option_set=options, selector_set=winrs.selector_set)
+        resp = self._connection.send(winrs.data_to_send())
+        event = winrs.wsman.receive_data(resp)
+
+        if not pipeline_id:
+            response_xml = event.body.find("rsp:ConnectResponse/pwsh:connectResponseXml", NAMESPACES).text
+
+            psrp_resp = PSRPPayload(base64.b64decode(response_xml), StreamType.default, None)
+            pool.receive_data(psrp_resp)
+
+        self._create_listener(pool, pipeline_id=pipeline_id)
 
     def _create_listener(
         self,
@@ -1050,7 +1134,7 @@ class WSManInfo(ConnectionInfo):
     ):
         started = threading.Event()
         task = threading.Thread(target=self._listen, args=(started, pool, pipeline_id))
-        self._listener_tasks[f'{pool.runspace_id}:{pipeline_id or ""}'] = task
+        self._listener_tasks[f'{pool.runspace_pool_id}:{str(pipeline_id) or ""}'] = task
         task.start()
         started.wait()
 
@@ -1060,11 +1144,11 @@ class WSManInfo(ConnectionInfo):
         pool: RunspacePool,
         pipeline_id: typing.Optional[str] = None,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         with WSManConnection(*self._connection_args, **self._connection_kwargs) as conn:
             while True:
-                winrs.receive("stdout", command_id=pipeline_id)
+                winrs.receive("stdout", command_id=(str(pipeline_id).upper() if pipeline_id else None))
 
                 resp = conn.send(winrs.data_to_send())
                 # TODO: Will the ReceiveResponse block if not all the fragments have been sent?
@@ -1083,7 +1167,7 @@ class WSManInfo(ConnectionInfo):
 
                 for psrp_data in event.get_streams().get("stdout", []):
                     msg = PSRPPayload(psrp_data, StreamType.default, pipeline_id)
-                    self.queue_response(pool.runspace_id, msg)
+                    self.queue_response(pool.runspace_pool_id, msg)
 
                 # If the command is done then we've got nothing left to do here.
                 # TODO: do we need to surface the exit_code into the protocol.
@@ -1091,7 +1175,7 @@ class WSManInfo(ConnectionInfo):
                     break
 
             if pipeline_id is None:
-                self.queue_response(pool.runspace_id, None)
+                self.queue_response(pool.runspace_pool_id, None)
 
 
 class AsyncWSManInfo(AsyncConnectionInfo):
@@ -1136,11 +1220,11 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         if pipeline_id is not None:
             await self.signal(pool, pipeline_id, signal_code=SignalCode.terminate)
 
-            pipeline_task = self._listener_tasks.pop(f"{pool.runspace_id}:{pipeline_id}")
+            pipeline_task = self._listener_tasks.pop(f"{pool.runspace_pool_id}:{pipeline_id}")
             await pipeline_task
 
         else:
-            winrs = self._runspace_table[pool.runspace_id]
+            winrs = self._runspace_table[pool.runspace_pool_id]
             winrs.close()
             resp = await self._connection.send(winrs.data_to_send())
             winrs.receive_data(resp)
@@ -1151,11 +1235,11 @@ class AsyncWSManInfo(AsyncConnectionInfo):
             # Wait for the listener task(s) to complete and remove the RunspacePool from our internal table.
             listen_tasks = []
             for task_id in list(self._listener_tasks.keys()):
-                if task_id.startswith(f"{pool.runspace_id}:"):
+                if task_id.startswith(f"{pool.runspace_pool_id}:"):
                     listen_tasks.append(self._listener_tasks.pop(task_id))
 
             await asyncio.gather(*listen_tasks)
-            del self._runspace_table[pool.runspace_id]
+            del self._runspace_table[pool.runspace_pool_id]
 
             # No more connections left, close the underlying connection.
             if not self._runspace_table:
@@ -1166,7 +1250,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         pool: RunspacePool,
         pipeline_id: str,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         payload = self.next_payload(pool)
         winrs.command("", args=[base64.b64encode(payload.data).decode()], command_id=pipeline_id)
@@ -1182,11 +1266,11 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         winrs = WinRS(
             WSMan(self._connection_uri),
             self._configuration_name,
-            shell_id=pool.runspace_id,
+            shell_id=str(pool.runspace_pool_id),
             input_streams="stdin pr",
             output_streams="stdout",
         )
-        self._runspace_table[pool.runspace_id] = winrs
+        self._runspace_table[pool.runspace_pool_id] = winrs
 
         payload = self.next_payload(pool)
 
@@ -1210,7 +1294,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         if not payload:
             return False
 
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         stream = "stdin" if payload.stream_type == StreamType.default else "pr"
         winrs.send(stream, payload.data, command_id=payload.pipeline_id)
@@ -1225,7 +1309,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         pipeline_id: typing.Optional[str] = None,
         signal_code: SignalCode = SignalCode.ps_ctrl_c,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         winrs.signal(signal_code, pipeline_id)
         resp = await self._connection.send(winrs.data_to_send())
@@ -1253,7 +1337,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
             )
             open_content.text = base64.b64encode(payload.data).decode()
 
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
         winrs.wsman.connect(winrs.resource_uri, connect, option_set=options, selector_set=winrs.selector_set)
         resp = await self._connection.send(winrs.data_to_send())
         event = winrs.wsman.receive_data(resp)
@@ -1272,7 +1356,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         buffer_mode: OutputBufferingMode = OutputBufferingMode.none,
         idle_timeout: typing.Optional[typing.Union[int, float]] = None,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
         rsp = NAMESPACES["rsp"]
 
         disconnect = ElementTree.Element("{%s}Disconnect" % rsp)
@@ -1292,7 +1376,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         self,
         pool: RunspacePool,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         winrs.wsman.reconnect(winrs.resource_uri, selector_set=winrs.selector_set)
         resp = await self._connection.send(winrs.data_to_send())
@@ -1320,7 +1404,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
     ):
         started = asyncio.Event()
         task = asyncio_create_task(self._listen(started, pool, pipeline_id))
-        self._listener_tasks[f'{pool.runspace_id}:{pipeline_id or ""}'] = task
+        self._listener_tasks[f'{pool.runspace_pool_id}:{pipeline_id or ""}'] = task
         await started.wait()
 
     async def _listen(
@@ -1329,7 +1413,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
         pool: RunspacePool,
         pipeline_id: typing.Optional[str] = None,
     ):
-        winrs = self._runspace_table[pool.runspace_id]
+        winrs = self._runspace_table[pool.runspace_pool_id]
 
         async with AsyncWSManConnection(*self._connection_args, **self._connection_kwargs) as conn:
             while True:
@@ -1352,7 +1436,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
 
                 for psrp_data in event.get_streams().get("stdout", []):
                     msg = PSRPPayload(psrp_data, StreamType.default, pipeline_id)
-                    await self.queue_response(pool.runspace_id, msg)
+                    await self.queue_response(pool.runspace_pool_id, msg)
 
                 # If the command is done then we've got nothing left to do here.
                 # TODO: do we need to surface the exit_code into the protocol.
@@ -1360,7 +1444,7 @@ class AsyncWSManInfo(AsyncConnectionInfo):
                     break
 
             if pipeline_id is None:
-                await self.queue_response(pool.runspace_id, None)
+                await self.queue_response(pool.runspace_pool_id, None)
 
 
 _EMPTY_UUID = "00000000-0000-0000-0000-000000000000"
