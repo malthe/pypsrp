@@ -458,88 +458,175 @@ class MyFileLogger(logging.FileHandler):
 """
 # Open Runspace Pool
 
-PSRP
+WSMan
     Client -> Server
-        SessionCapability, InitRunspacePool,
+        Create - SessionCapability, InitRunspacePool
 
     Server -> Client
-        SessionCapability, ApplicationPrivateData, RunspacePoolState
+        CreateResponse
 
-WSMan
-    WSMan Create - Include as many fragments
-    WSMan Response - No data
+    Client -> Server
+        Send - Any fragments that didn't fit into Create
 
-    WSMan Receive - Start receiving data on loop until close
-    WSMan ReceiveResponse - PSRP fragments from server
+    Server -> Client
+        SendResponse
 
-    WSMan Send - Remaining fragments taht didn't fit into the Create message
-    WSMan SendResponse - For every send, no data
+    Client -> Server (Keeps on running until the runspace is closed)
+        Receive
+
+    Server -> Client
+        ReceiveResponse - SessionCapability, ApplicationPrivateData, RunspacePoolState
 
 OutOfProc
+    Client -> Server
+        Data - SessionCapability, InitRunspacePool
+
+    Server -> Client
+        Data - SessionCapability, ApplicationPrivateData, RunspacePoolState
+        DataAck
+
 
 
 # Close Runspace Pool
 
 Must stop all pipelines first
 
-PSRP
+WSMan
     Client -> Server
-        Nothing
+        Delete
 
     Server -> Client
-        Nothing
-
-WSMan
-    WSMan Delete - No data
-    WSMan DeleteResponse - No data
+        DeleteResponse
 
 OutOfProc
+    Client -> Server
+        Close
+
+    Server -> Client
+        Data - RunspacePoolState - 4 (Closing)
+        Data - RunspacePoolState - 3 (Closed)
+        CloseAck
+
 
 
 # Disconnect Runspace Pool
 
-PSRP
+WSMan
     Client -> Server
-        Nothing
+        Disconnect - Contains IdleTimeout and BufferMode but no PSRP message
 
     Server -> Client
-        Nothing
+        DisconnectResponse
 
-WSMan
-    WSMan Disconnect - No data
-    WSMan DisconnectResponse - No data
+OutOfProc
+    N/A
 
 
 
 # Reconnect Runspace Pool
 
-PSRP
+WSMan
     Client -> Server
-        Nothing
+        Connect - SessionCapability, ConnectRunspacePool
 
     Server -> Client
-        Nothing
+        ConnectResponse - SessionCapability, RunspacePoolInitData
 
-WSMan
-    WSMan Reconnect - No data
-    WSMan ReconnectResponse - No data
+    Client -> Server  # Keeps on running until the runspace is closed
+        Receive
+
+    Server -> Client
+        ReceiveResponse - ApplicationPrivateData
+
+OutOfProc
+    N/A
+
 
 
 # Connect Runspace Pool
 
-PSRP
+WSMan
     Client -> Server
-        SessionCapability,ConnectRunspacePool
+        Connect - SessionCapability, ConnectRunspacePool
 
     Server -> Client
+        ConnectResponse - Some fragments
 
-WSMan:
-    WSManConnect - Include as many fragments
-    WSManConnectResponse - Contains some fragments
+    Client -> Server
+        Receive
 
-    WSManReceive - No data
-    WSManReceiveResponse - No data
+    Server -> Client
+        ReceiveResponse
 
+OutOfProc
+    N/A
+
+
+
+# Create a pipeline
+
+WSMan
+    Client -> Server
+        Command - CreatePipeline
+
+    Server -> Client
+        CommandResponse
+
+OutOfProc
+    Client -> Server
+        Command
+
+    Server -> Client
+        CommandAck
+
+    Client -> Server
+        Data - CreatePipeline
+
+    Server -> Client
+        DataAck
+
+
+
+# Pipeline end
+
+WSMan
+    Server -> Client
+        ReceiveResponse - PipelineState
+
+OutOfProc
+    Server -> Client
+        Data - PipelineState
+
+
+
+# Pipeline cleanup
+
+WSMan
+    Client -> Server
+        Signal - http://schemas.microsoft.com/wbem/wsman/1/windows/shell/signal/terminate
+
+    Server -> Client
+        SignalResponse
+
+OutOfProc
+    Client -> Server
+        Close
+
+    Server -> Client
+        CloseAck
+
+
+
+# Stop a pipeline
+
+Still runs the cleanup step. Both have a PipelineState stopped response
+
+WSMan: - Still send signal to cleanup/terminate afterwards
+    Client -> Server
+        Signal - powershell/signal/crtl_c
+
+    Server -> Client
+        SignalResponse
 """
 
 
